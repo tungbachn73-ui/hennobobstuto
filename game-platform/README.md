@@ -54,3 +54,12 @@ Requires Node 18+.
 ## Model names
 
 Free/Pro/Max tiers use the naming from the product spec (GPT 5.6 Terra, Haiku 4.6, 6.1 Sol, Opus 4.6, Gemini 4 Hydrogen, GPT-6 Omega, ...). These are product-facing labels; map them to real provider IDs in `lib/catalog.ts` (the `id` fields) when wiring production accounts.
+
+## Instant edition (zero setup)
+
+`standalone/GamePlatform.html` is the whole platform in one file — no Node, no npm, no build. Download it, double-click it, it opens in your browser.
+
+- Everything works: AI-squad builder (built-in mock brain), Scratch-style block editor, play preview, publish pipeline (icon + screenshots + trailer + listing), gallery/remix, models page, and full settings (usage / privacy / general / account / billing).
+- Same mechanics: Free (3-agent squads, +50K flat), Pro (10 agents, 5×), Max (30 agents, 10×); 3-hour and 7-day usage windows; credit packs.
+- Optionally enable **Real API mode**: paste your own OpenRouter / Hugging Face / OpenAI / Google / Anthropic key on the Models page and squad agents answer through the live provider (keys stay in your browser only).
+- Published games still export as standalone HTML5 files runnable on any device.
