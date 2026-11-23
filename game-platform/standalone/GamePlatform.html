@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GamePlatform — Instant Edition</title>
+<style>
+:root{--ink:#0a0b12;--panel:#11131f;--panel2:#171a2b;--edge:#262b45;--neon:#7c5cff;--aqua:#22d3ee;--lime:#a3e635;--rose:#fb7185}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:#e6e8f5;font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}
+button{font:inherit}
+a{color:var(--aqua);text-decoration:none}
+#app{max-width:1080px;margin:0 auto;padding:0 16px 60px}
+nav{position:sticky;top:0;z-index:9;background:rgba(10,11,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge);display:flex;gap:5px;align-items:center;padding:10px 16px;margin:0 -16px 18px;flex-wrap:wrap}
+.logo{font-weight:800;letter-spacing:.3px;background:linear-gradient(90deg,var(--neon),var(--aqua));-webkit-background-clip:text;background-clip:text;color:transparent;margin-right:10px;font-size:17px;cursor:pointer}
+.tab{padding:6px 11px;border-radius:9px;color:#9aa0c0;cursor:pointer;border:1px solid transparent;font-size:13.5px;background:none}
+.tab:hover{color:#fff}
+.tab.on{color:#fff;background:var(--panel2);border-color:var(--edge)}
+.tab.off{opacity:.35;cursor:not-allowed}
+.spacer{flex:1}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:16px;margin:12px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.btn{background:var(--panel2);border:1px solid var(--edge);color:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13.5px}
+.btn:hover{border-color:var(--neon)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.pri{background:linear-gradient(90deg,var(--neon),#5b8cff);border-color:transparent;font-weight:700}
+.btn.lime{background:linear-gradient(90deg,#65a30d,var(--lime));border-color:transparent;color:#0d1503;font-weight:700}
+.btn.danger{border-color:var(--rose);color:var(--rose);background:transparent}
+.btn.sm{padding:4px 9px;font-size:12px}
+input,select,textarea{background:#0d0f1c;border:1px solid var(--edge);border-radius:9px;color:#e6e8f5;padding:8px 10px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--neon)}
+textarea{width:100%;min-height:64px;resize:vertical}
+.chip{display:inline-block;background:var(--panel2);border:1px solid var(--edge);border-radius:99px;padding:3px 10px;font-size:12px;color:#aab1d4;margin:2px}
+.chip.lock{opacity:.45}
+.muted{color:#9aa0c0;font-size:13px}
+.small{font-size:12.5px}
+.h1{font-size:26px;font-weight:800;margin:8px 0}
+.h2{font-size:16px;font-weight:700;margin:14px 0 8px}
+.bar{height:8px;background:#0d0f1c;border-radius:9px;overflow:hidden;border:1px solid var(--edge);flex:1;min-width:90px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--neon),var(--aqua))}
+.bar i.hot{background:linear-gradient(90deg,#f59e0b,var(--rose))}
+.blk{background:#181c30;border:1px solid var(--edge);border-left:4px solid var(--neon);border-radius:9px;padding:4px 8px;margin:4px 0;font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.blk.k-control{border-left-color:var(--lime)} .blk.k-sensing{border-left-color:var(--aqua)} .blk.k-look{border-left-color:#f59e0b} .blk.k-game{border-left-color:var(--rose)}
+.blk .x{color:var(--rose);cursor:pointer;margin-left:auto;background:none;border:none;padding:0 4px}
+.kids{margin-left:18px;border-left:2px dashed var(--edge);padding-left:8px}
+.msg{padding:8px 12px;border-radius:10px;margin:6px 0;max-width:88%}
+.msg.me{background:linear-gradient(90deg,rgba(124,92,255,.25),rgba(34,211,238,.18));margin-left:auto}
+.msg.ai{background:var(--panel2);border:1px solid var(--edge)}
+canvas.stage{width:100%;max-width:520px;border:1px solid var(--edge);border-radius:12px;background:#000;display:block}
+table{width:100%;border-collapse:collapse} td,th{padding:7px 8px;border-bottom:1px solid var(--edge);text-align:left;font-size:13.5px}
+.badge{padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700}
+.badge.free{background:#1d2440;color:#9aa0c0}.badge.pro{background:rgba(124,92,255,.2);color:#b7a7ff;border:1px solid var(--neon)}.badge.max{background:linear-gradient(90deg,rgba(163,230,53,.25),rgba(34,211,238,.25));color:#d8ffa8;border:1px solid var(--lime)}
+.plan{border:1px solid var(--edge);border-radius:14px;padding:16px;background:var(--panel)}
+.plan.hot{border-color:var(--neon)}
+.price{font-size:26px;font-weight:800;margin:4px 0}
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.bat{position:relative;width:38px;height:20px;background:#0d0f1c;border:1px solid var(--edge);border-radius:99px;flex:none}
+.bat i{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:99px;background:#9aa0c0;transition:all .15s}
+.bat.on{background:rgba(124,92,255,.4);border-color:var(--neon)}
+.bat.on i{left:20px;background:var(--neon)}
+.sttabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.log{background:#0d0f1c;border:1px solid var(--edge);border-radius:10px;padding:10px 12px;max-height:220px;overflow:auto;font:12px/1.6 ui-monospace,monospace;color:#9aa0c0}
+.thumb{width:100%;border-radius:10px;border:1px solid var(--edge)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============ catalogs ============ */
+var PLANS={
+ free:{id:"free",name:"Free",monthly:0,once:0,tokenPool:5e6,squadMax:3,overheadLabel:"+50K flat per run",nudge:"Budget AI squad + block editor + free publishing.",
+   models:"Gemini 3.1 Pro · GPT 5.6 Terra · Haiku 4.6 · DeepSeek Lite · Llama 3.1 · more"},
+ pro:{id:"pro",name:"Pro",monthly:30,once:100,tokenPool:20e6,squadMax:10,overheadLabel:"5× tokens per run vs Free",nudge:"Strong frontier models + 10-agent AI squads.",
+   models:"6.1 Sol · Opus 4.6 · Gemini 4 Hydrogen · GPT 6 Chat · Codestral · Grok 4"},
+ max:{id:"max",name:"Max",monthly:50,once:150,tokenPool:100e6,squadMax:30,overheadLabel:"10× vs Free (2× vs Pro)",nudge:"The strongest public models today + 30-agent mega-squads.",
+   models:"GPT 6 Omega · Gemini 4 Nebula · Claude 5 Frontier · Mistral Large 3 · DeepSeek R2 · Grok 5"}
+};
+var PACKS=[
+ {id:"pk1",label:"500K tokens",tokens:5e5,price:1.99},
+ {id:"pk2",label:"2M tokens",tokens:2e6,price:4.99},
+ {id:"pk3",label:"5M tokens",tokens:5e6,price:9.99},
+ {id:"pk4",label:"10M tokens",tokens:1e7,price:19.9},
+ {id:"pk5",label:"25M tokens",tokens:2.5e7,price:49.9},
+ {id:"pk6",label:"50M tokens",tokens:5e7,price:99.9}
+];
+var MODELS=[
+ {id:"gemini-3-1-pro",name:"Gemini 3.1 Pro",vendor:"Google",tier:"free",note:"Great all-round game designer.",alias:{openrouter:"google/gemini-3.1-pro",google:"gemini-3.1-pro"}},
+ {id:"gpt-5-6-terra",name:"GPT 5.6 Terra",vendor:"OpenAI",tier:"free",note:"Reliable writer for prompts & levels.",alias:{openrouter:"openai/gpt-5.6-terra",openai:"gpt-5.6-terra"}},
+ {id:"claude-haiku-4-6",name:"Haiku 4.6",vendor:"Anthropic",tier:"free",note:"Fast drafts, tight code.",alias:{openrouter:"anthropic/claude-haiku-4.6",anthropic:"claude-haiku-4-6"}},
+ {id:"deepseek-v3-lite",name:"DeepSeek V3 Lite",vendor:"DeepSeek",tier:"free",note:"Budget workhorse coder.",alias:{openrouter:"deepseek/deepseek-v3-lite"}},
+ {id:"llama-3-1-70b",name:"Llama 3.1 70B",vendor:"Meta",tier:"free",note:"Open-weights chatty helper.",alias:{openrouter:"meta-llama/llama-3.1-70b",huggingface:"meta-llama/Llama-3.1-70B-Instruct"}},
+ {id:"mistral-small-3",name:"Mistral Small 3",vendor:"Mistral",tier:"free",note:"Snappy reviewer and fixer.",alias:{openrouter:"mistralai/mistral-small-3",huggingface:"mistralai/Mistral-Small-3"}},
+ {id:"qwen-2-5-coder",name:"Qwen 2.5 Coder",vendor:"Alibaba",tier:"free",note:"Cheap block-code generator.",alias:{openrouter:"qwen/qwen-2.5-coder",huggingface:"Qwen/Qwen2.5-Coder"}},
+ {id:"sol-6-1",name:"6.1 Sol",vendor:"Sunrise Labs",tier:"pro",note:"Designer-brain, strong at level flow.",alias:{openrouter:"sunrise/sol-6.1"}},
+ {id:"opus-4-6",name:"Opus 4.6",vendor:"Anthropic",tier:"pro",note:"Top-tier reasoning programmer.",alias:{openrouter:"anthropic/claude-opus-4.6",anthropic:"claude-opus-4-6"}},
+ {id:"gemini-4-hydrogen",name:"Gemini 4 Hydrogen",vendor:"Google",tier:"pro",note:"Long-context art director.",alias:{openrouter:"google/gemini-4-hydrogen",google:"gemini-4-hydrogen"}},
+ {id:"gpt-6-chat",name:"GPT 6 Chat",vendor:"OpenAI",tier:"pro",note:"Balanced producer & QA critic.",alias:{openrouter:"openai/gpt-6-chat",openai:"gpt-6-chat"}},
+ {id:"grok-4-reasoner",name:"Grok 4 Reasoner",vendor:"xAI",tier:"pro",note:"Puzzle logic specialist.",alias:{openrouter:"x-ai/grok-4"}},
+ {id:"codestral-25-08",name:"Codestral 25.08",vendor:"Mistral",tier:"pro",note:"Mistral's code model — raw block code fast.",alias:{openrouter:"mistralai/codestral-25.08",huggingface:"mistralai/Codestral"}},
+ {id:"gpt-6-omega",name:"GPT 6 Omega",vendor:"OpenAI",tier:"max",note:"One of the strongest public models today.",alias:{openrouter:"openai/gpt-6-omega",openai:"gpt-6-omega"}},
+ {id:"gemini-4-nebula",name:"Gemini 4 Nebula",vendor:"Google",tier:"max",note:"Frontier multimodal giant.",alias:{openrouter:"google/gemini-4-nebula",google:"gemini-4-nebula"}},
+ {id:"claude-5-frontier",name:"Claude 5 Frontier",vendor:"Anthropic",tier:"max",note:"Flagship deep-thinker.",alias:{openrouter:"anthropic/claude-5-frontier",anthropic:"claude-5-frontier"}},
+ {id:"mistral-large-3",name:"Mistral Large 3",vendor:"Mistral",tier:"max",note:"Flagship European reasoning model.",alias:{openrouter:"mistralai/mistral-large-3",huggingface:"mistralai/Mistral-Large-3"}},
+ {id:"deepseek-r2-max",name:"DeepSeek R2 Max",vendor:"DeepSeek",tier:"max",note:"Deep reasoning at open prices.",alias:{openrouter:"deepseek/deepseek-r2"}},
+ {id:"grok-5-x",name:"Grok 5 X",vendor:"xAI",tier:"max",note:"Frontier real-time reasoner.",alias:{openrouter:"x-ai/grok-5"}}
+];
+var PROVIDERS=[
+ {id:"openrouter",name:"OpenRouter",docs:"https://openrouter.ai/docs",endpoint:"https://openrouter.ai/api/v1/chat/completions",style:"openai"},
+ {id:"huggingface",name:"Hugging Face Router",docs:"https://huggingface.co/docs/inference-providers",endpoint:"https://router.huggingface.co/v1/chat/completions",style:"openai"},
+ {id:"openai",name:"OpenAI",docs:"https://platform.openai.com/docs",endpoint:"https://api.openai.com/v1/chat/completions",style:"openai"},
+ {id:"google",name:"Google AI",docs:"https://ai.google.dev",endpoint:"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",style:"openai"},
+ {id:"anthropic",name:"Anthropic",docs:"https://docs.anthropic.com",endpoint:"https://api.anthropic.com/v1/messages",style:"anthropic"}
+];
+var ROLES=[
+ {id:"designer",label:"Game Designer",emoji:"🎲",job:"turns your prompt into game rules, goals and win/lose states"},
+ {id:"programmer",label:"Programmer",emoji:"🧩",job:"writes the actual block program that runs the game"},
+ {id:"artist",label:"Artist",emoji:"🎨",job:"picks colors, shapes, background vibes"},
+ {id:"qa",label:"QA Critic",emoji:"🔍",job:"plays the build and lists bugs + balance fixes"},
+ {id:"producer",label:"Producer",emoji:"🎬",job:"cuts scope, sequences the team, protects the fun"},
+ {id:"narrative",label:"Narrative",emoji:"📖",job:"writes hooks, titles and store-listing copy"},
+ {id:"audio",label:"Audio",emoji:"🔊",job:"plans sound moments (exported games ship silent cues)"}
+];
+function roleById(id){ for(var i=0;i<ROLES.length;i++) if(ROLES[i].id===id) return ROLES[i]; return ROLES[0]; }
+function modelById(id){ for(var i=0;i<MODELS.length;i++) if(MODELS[i].id===id) return MODELS[i]; return MODELS[0]; }
+var TIER_RANK={free:0,pro:1,max:2};
+function canUseModel(tier,m){ return TIER_RANK[m.tier]<=TIER_RANK[tier]; }
+var BLOCK_DEFS={
+ whenFlag:{cat:"event",label:"when ⚑ clicked",kids:true,args:[]},
+ whenKey:{cat:"event",label:"when key held",kids:true,args:[{n:"key",t:"key",d:"ArrowRight"}]},
+ forever:{cat:"control",label:"forever",kids:true,args:[]},
+ repeat:{cat:"control",label:"repeat",kids:true,args:[{n:"n",t:"num",d:10}]},
+ wait:{cat:"control",label:"wait seconds",args:[{n:"sec",t:"num",d:1}]},
+ move:{cat:"motion",label:"move steps",args:[{n:"steps",t:"num",d:6}]},
+ turn:{cat:"motion",label:"turn degrees",args:[{n:"deg",t:"num",d:15}]},
+ point:{cat:"motion",label:"point in direction",args:[{n:"deg",t:"num",d:90}]},
+ goto:{cat:"motion",label:"go to x y",args:[{n:"x",t:"num",d:240},{n:"y",t:"num",d:160}]},
+ home:{cat:"motion",label:"go home",args:[]},
+ edgeBounce:{cat:"motion",label:"if on edge, bounce",args:[]},
+ say:{cat:"looks",label:"say",args:[{n:"text",t:"text",d:"Hello!"}]},
+ setColor:{cat:"looks",label:"set color",args:[{n:"color",t:"color",d:"#22d3ee"}]},
+ setShape:{cat:"looks",label:"set shape",args:[{n:"shape",t:"shape",d:"arrow"}]},
+ setSize:{cat:"looks",label:"set size",args:[{n:"px",t:"num",d:22}]},
+ spawn:{cat:"game",label:"spawn orb here",args:[]},
+ addScore:{cat:"game",label:"add score",args:[{n:"n",t:"num",d:1}]},
+ levelUp:{cat:"game",label:"level up",args:[]},
+ gameOver:{cat:"game",label:"game over",args:[]}
+};
+var SPARKY=0.9;
+function bl(kind,args,children){
+ var def=BLOCK_DEFS[kind]||BLOCK_DEFS.say; var a={};
+ for(var i=0;i<(def.args||[]).length;i++){ var an=def.args[i].n; a[an]=(args&&args[an]!=null)?args[an]:def.args[i].d; }
+ return {kind:kind,args:a,children:(def.kids?(children||[]):undefined)};
+}
+/* ============ state ============ */
+var SKEY="gp_instant_v1";
+function defState(){ return {
+ tier:"free",credits:0,billingMode:"monthly",poolStart:Date.now(),
+ usage:[],projects:[],keys:{},useRealApi:false,
+ privacy:{saveHistory:true,shareUsage:false,publicProfile:true},
+ profile:{name:"Player One",avatar:"🎮"},history:[],cur:null,view:"dashboard",stTab:"general",spriteSel:0
+};}
+var S=(function(){ try{ var raw=localStorage.getItem(SKEY); if(raw){ var s=JSON.parse(raw); return Object.assign(defState(),s); } }catch(e){} return defState(); })();
+function save(){ try{ localStorage.setItem(SKEY,JSON.stringify(S)); }catch(e){} }
+var HOUR_WINDOW=3*3600*1000, WEEK_WINDOW=7*24*3600*1000, ASSET_COST=60000;
+function now(){ return Date.now(); }
+function poolUsed(){ var s=0; for(var i=0;i<S.usage.length;i++) s+=S.usage[i].n; return s; }
+function tokensAvail(){ return PLANS[S.tier].tokenPool+S.credits-poolUsed(); }
+function sumSince(ms){ var t=now()-ms,s=0; for(var i=0;i<S.usage.length;i++) if(S.usage[i].at>=t) s+=S.usage[i].n; return s; }
+function consume(n,label){
+ n=Math.round(n);
+ if(n>tokensAvail()) return false;
+ S.usage.push({n:n,at:now(),label:label||"tokens"}); consume.last=n; return true;
+}
+function windows(){
+ var hr=PLANS[S.tier].tokenPool*0.25, wk=PLANS[S.tier].tokenPool*0.75;
+ return [ {label:"Hourly window (resets every 3 h)",used:sumSince(HOUR_WINDOW),cap:hr},
+          {label:"Weekly window (resets every 7 days)",used:sumSince(WEEK_WINDOW),cap:wk} ];
+}
+function fmt(n){
+ if(n>=1e9) return (n/1e9).toFixed(1).replace(/\.0$/,"")+"B";
+ if(n>=1e6) return (n/1e6).toFixed(1).replace(/\.0$/,"")+"M";
+ if(n>=1e3) return (n/1e3).toFixed(0)+"K";
+ return String(Math.round(n));
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function timeAgo(t){ var d=Math.max(0,now()-t); if(d<6e4) return "just now"; if(d<36e5) return Math.floor(d/6e4)+"m ago"; if(d<864e5) return Math.floor(d/36e5)+"h ago"; return Math.floor(d/864e5)+"d ago"; }
+function slug(s){ return String(s||"game").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"").slice(0,40)||"game"; }
+function cur(){ for(var i=0;i<S.projects.length;i++) if(S.projects[i].id===S.cur) return S.projects[i]; return null; }
+function createProject(name,prompt,mode){
+ var p={id:uid(),name:name||"Untitled Game",prompt:prompt||"",mode:mode||"ai",createdAt:now(),updatedAt:now(),
+   program:null,squad:[],chat:[],log:[],published:null,params:{speed:4,orbs:6,theme:"neon"}};
+ S.projects.unshift(p); S.cur=p.id; return p;
+}
+/* ============ AI engine (mock) ============ */
+function pickTemplate(prompt){
+ var p=(prompt||"").toLowerCase();
+ if(/cave|mine|dark|spy|ghost/.test(p)) return {name:"Gem Cave",bg:"#141225|#080a14",theme:"cave",orbs:5,chase:3.4,size:24};
+ if(/chase|run|escape|survive|fast/.test(p)) return {name:"Neon Gauntlet",bg:"#160f22|#0a0f18",theme:"gauntlet",orbs:7,chase:4.4,size:20};
+ return {name:"Orb Rush",bg:"#101426|#0a0c18",theme:"orbs",orbs:6,chase:3.6,size:22};
+}
+function buildProgram(prompt,params){
+ var t=pickTemplate(prompt), P=params||{};
+ var orbs=Math.max(1,Math.min(10,P.orbs!=null?P.orbs:t.orbs));
+ var speed=Math.max(1,Math.min(12,P.speed!=null?P.speed:4));
+ var heroBlocks=[
+   bl("whenFlag",{},[bl("goto",{x:240,y:160}),bl("point",{deg:90}),bl("say",{text:one(prompt,"Go!")})].concat(orbSpawns(orbs))),
+   bl("whenKey",{key:"ArrowUp"},[bl("point",{deg:0}),bl("move",{steps:speed})]),
+   bl("whenKey",{key:"ArrowRight"},[bl("point",{deg:90}),bl("move",{steps:speed})]),
+   bl("whenKey",{key:"ArrowDown"},[bl("point",{deg:180}),bl("move",{steps:speed})]),
+   bl("whenKey",{key:"ArrowLeft"},[bl("point",{deg:270}),bl("move",{steps:speed})])
+ ];
+ var chas={name:"chaser"+(t.theme==="gauntlet"?"-v2":" "),shape:"circle",color:"#fb7185",size:t.size,x:60,y:250,dir:45,blocks:[
+   bl("whenFlag",{},[bl("goto",{x:60,y:250}),bl("setSize",{px:t.size})]),
+   bl("forever",{},[bl("move",{steps:P.chase!=null?P.chase:t.chase}),bl("edgeBounce")])
+ ]};
+ if(t.theme==="cave") chas.color="#a78bfa";
+ return {bg:t.bg,sprites:[
+   {name:"hero",shape:"arrow",color:"#22d3ee",size:22,x:240,y:160,dir:90,blocks:heroBlocks},
+   chas
+ ]};
+}
+function orbSpawns(n){ var a=[]; for(var i=0;i<n;i++) a.push(bl("spawn")); return a; }
+function one(s,d){ var w=String(s||"").trim().split(/\s+/).slice(0,5).join(" "); return w?w.slice(0,40):d; }
+function suggestAgents(tier,prompt){
+ var max=PLANS[tier].squadMax;
+ var base=["designer","programmer","artist"];
+ if(max>=5) base.push("qa"); if(max>=7) base.push("narrative"); if(max>=10) base.push("producer");
+ var models=[]; var tierPool=MODELS.filter(function(m){return canUseModel(tier,m);});
+ for(var i=0;i<base.length;i++){ models.push(tierPool[i%tierPool.length].id); }
+ return base.map(function(r,i){ return {id:uid(),role:r,model:models[i]}; });
+}
+function mockChat(agent,prompt,tier){
+ var r=roleById(agent.role); var m=modelById(agent.model);
+ var lines={
+  designer:"Design pass on «"+one(prompt,"your idea")+"»:core loop = collect every orb while dodging the chaser. Win state: all orbs gone. Lose state: hero tagged. Pacing: 3 escalating pushes before first breather.",
+  programmer:"Program updated — hero gets 4-way key control, " + Math.min(10,6) + " orbs on flag, chaser on a bouncing forever-loop. Compiled to 19 blocks. Preview live.",
+  artist:"Palette locked: aqua hero, rose2 threat, deep-space gradient. Shapes set for silhouette readability at small size.",
+  qa:"Played 5 runs. Found: chaser drift near corners (benign). Balance: orb count feels right; suggest +1 orb per level-up. No blockers.",
+  producer:"Scope locked to a 1-minute loop: sample, ship, remix. Publishing pipeline is next — assets auto-generated.",
+  narrative:"Title hook: «"+one(prompt,"Orb Rush")+"». One-liner for the store: 'Grab every glowing orb. Outlive the circle. Repeat.'",
+  audio:"Sound plan: soft pickup blip, rising chase drone, win fanfare at orb-zero."
+ };
+ var text=lines[agent.role]||lines.designer;
+ return "🤖 ["+r.emoji+" "+r.label+" · "+m.name+"] "+text;
+}
+function squadCost(nAgents,tier){
+ var base=Math.round(12000*Math.max(1,nAgents)*0.8);
+ var total=tier==="free"?base+50000:(tier==="pro"?base*5:base*10);
+ return {base:base,total:total};
+}
+/* ============ runtime factory (shared with exported games) ============ */
+function GP_RUNTIME_FACTORY(){
+"use strict";
+var W=480,H=320;
+function mk(prog,canvas){
+ var ctx=canvas.getContext("2d");
+ var sprites=[],orbs=[],spawned=0,score=0,level=1,won=false,over=false,T=0,confetti=[],keys={},seed=7;
+ (prog.sprites||[]).forEach(function(s0){
+  var s={name:String(s0.name||"sprite").trim(),shape:s0.shape||"circle",color:s0.color||"#22d3ee",size:s0.size||22,
+   x:s0.x,y:s0.y,dir:s0.dir||90,dir0:s0.dir||90,sayT:0,say:"",waitT:0,start:{x:s0.x,y:s0.y},scripts:[],execs:{}};
+  var startList=[];
+  (s0.blocks||[]).forEach(function(b){
+   if(b.kind==="whenFlag"||b.kind==="whenKey"||b.kind==="forever"||b.kind==="repeat"){
+    s.scripts.push({trig:b.kind==="whenFlag"?"flag":b.kind==="forever"?"forever":b.kind==="whenKey"?("key:"+(b.args&&b.args.key||"ArrowRight")):"flag2",
+     body:b.children||[],done:false});
+   } else startList.push(b);
+  });
+  if(startList.length) s.scripts.push({trig:"flag",body:startList,done:false});
+  sprites.push(s);
+ });
+ function collide(a,b,rad){ var dx=a.x-b.x,dy=a.y-b.y; return dx*dx+dy*dy < rad*rad; }
+ function keep(s){ s.x=Math.max(10,Math.min(W-10,s.x)); s.y=Math.max(10,Math.min(H-10,s.y)); }
+ function mv(s,n){ var r=s.dir*Math.PI/180; s.x+=Math.sin(r)*n; s.y-=Math.cos(r)*n; keep(s); }
+ function doB(s,b,st){
+  var n=function(v){ v=parseFloat(v); return isNaN(v)?0:v; };
+  var a=b.args||{};
+  switch(b.kind){
+   case "forever": st.push({body:b.children||[],i:0,inf:true,left:-1}); return;
+   case "repeat": var r=Math.max(0,Math.round(n(a.n))); if(r>0) st.push({body:b.children||[],i:0,inf:false,left:r-1}); return;
+   case "wait": s.waitT=Math.max(1,Math.round(n(a.sec)*30)); return;
+   case "move": mv(s,n(a.steps)*4); return;
+   case "turn": s.dir=(s.dir+n(a.deg))%360; return;
+   case "point": s.dir=n(a.deg)%360; return;
+   case "goto": s.x=n(a.x); s.y=n(a.y); keep(s); return;
+   case "home": s.x=s.start.x; s.y=s.start.y; return;
+   case "edgeBounce":
+    if(s.x<=10){s.x=10;s.dir=-s.dir;} if(s.x>=W-10){s.x=W-10;s.dir=-s.dir;}
+    if(s.y<=10){s.y=10;s.dir=180-s.dir;} if(s.y>=H-10){s.y=H-10;s.dir=180-s.dir;} return;
+   case "say": s.say=String(a.text==null?"":a.text).slice(0,60); s.sayT=90; return;
+   case "setColor": s.color=String(a.color||"#22d3ee"); return;
+   case "setShape": s.shape=String(a.shape||"circle"); return;
+   case "setSize": s.size=Math.max(8,Math.min(80,n(a.px))); return;
+   case "spawn":
+    seed=(seed*9301+49297)%233280; spawned++;
+    if(orbs.length<30) orbs.push({x:24+(seed%432),y:24+((seed*7)%272)}); return;
+   case "addScore": score+=Math.round(n(a.n)); return;
+   case "levelUp": level+=1; return;
+   case "gameOver": over=true; return;
+  }
+ }
+ function runScript(s,i){
+  var sc=s.scripts[i],st=s.execs[i];
+  if(!st) return;
+  var budget=600;
+  while(budget-->0){
+   var top=st[st.length-1];
+   if(!top){ s.execs[i]=null; sc.done=true; return; }
+   if(top.i>=top.body.length){
+    var more=top.inf||(top.left-->0);
+    if(more){ top.i=0; continue; }
+    st.pop(); continue;
+   }
+   doB(s,top.body[top.i++],st);
+  }
+ }
+ function hero(){ for(var i=0;i<sprites.length;i++) if(/^hero/.test(sprites[i].name)) return sprites[i]; return null; }
+ function isChaser(s){ return /chaser/i.test(s.name); }
+ function collisions(){
+  var h=hero(); if(!h) return;
+  for(var i=orbs.length-1;i>=0;i--){
+   if(collide(h,orbs[i],h.size*0.5+10)){ orbs.splice(i,1); score+=25; }
+  }
+  if(orbs.length===0 && spawned>0){ wanCheck(); }
+  for(var j=0;j<sprites.length;j++){
+   var c=sprites[j];
+   if(isChaser(c)&&collide(h,c,(h.size+c.size)*0.5-4)){ over=true; return; }
+  }
+ }
+ function wanCheck(){ won=true; for(var i=0;i<70;i++) confetti.push({x:W/2,y:H/2,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-2,c:["#22d3ee","#a3e635","#fb7185","#7c5cff"][i%4]}); orbWins=false; score+=100*level; }
+ function step(){
+  if(over||won){ draw(); return; }
+  T++;
+  for(var i=0;i<confetti.length;i++){ var p=confetti[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.35; }
+  for(var si=0;si<sprites.length;si++){
+   var s=sprites[si];
+   if(s.waitT>0){ s.waitT--; continue; }
+   for(var k=0;k<s.scripts.length;k++){
+    var sc=s.scripts[k],trig=sc.trig,go=false;
+    if(trig==="flag"){ if(sc.done) continue; if(!s.execs[k]) s.execs[k]=[{body:sc.body,i:0,inf:false,left:-1}]; }
+    else if(trig==="forever"){ if(!s.execs[k]) s.execs[k]=[{body:sc.body,i:0,inf:true,left:-1}]; }
+    else if(trig.indexOf("key:")===0){ var key=trig.slice(4); if(!keys[key]) continue; if(!s.execs[k]) s.execs[k]=[{body:sc.body,i:0,inf:false,left:-1}]; }
+    if(s.execs[k]) runScript(s,k);
+   }
+   if(s.sayT>0) s.sayT--;
+  }
+  collisions();
+  draw();
+ }
+ function draw(target){
+  var g=(target||ctx);
+  var bgv=(prog.bg||"#101426|#0a0c18").split("|");
+  var grad=g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,bgv[0]||"#101426"); grad.addColorStop(1,bgv[1]||"#0a0c18");
+  g.fillStyle=grad; g.fillRect(0,0,W,H);
+  g.strokeStyle="rgba(255,255,255,0.04)"; g.lineWidth=1;
+  for(var x=0;x<=W;x+=40){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,H); g.stroke(); }
+  for(var y=0;y<=H;y+=40){ g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); }
+  for(var o=0;o<orbs.length;o++){
+   var ob=orbs[o]; g.save(); g.translate(ob.x,ob.y); g.rotate(T*0.05+o);
+   var pulse=4+Math.sin(T*0.1+o)*1.5;
+   g.fillStyle="#ffd166"; g.beginPath(); g.moveTo(0,-6-pulse); g.lineTo(6+pulse,0); g.lineTo(0,6+pulse); g.lineTo(-6-pulse,0); g.closePath(); g.fill();
+   g.strokeStyle="rgba(255,209,102,.4)"; g.stroke(); g.restore();
+  }
+  for(var si=0;si<sprites.length;si++){
+   var s=sprites[si];
+   g.save(); g.translate(s.x,s.y); g.fillStyle=s.color; g.strokeStyle="rgba(0,0,0,.35)"; g.lineWidth=2;
+   var r=s.size/2;
+   if(s.shape==="arrow"){ g.rotate(s.dir*Math.PI/180); g.beginPath(); g.moveTo(r,0); g.lineTo(-r*0.8,-r*0.8); g.lineTo(-r*0.35,0); g.lineTo(-r*0.8,r*0.8); g.closePath(); g.fill(); g.stroke(); }
+   else if(s.shape==="square"){ g.fillRect(-r,-r,s.size,s.size); g.strokeRect(-r,-r,s.size,s.size); }
+   else if(s.shape==="diamond"){ g.beginPath(); g.moveTo(0,-r); g.lineTo(r,0); g.lineTo(0,r); g.lineTo(-r,0); g.closePath(); g.fill(); g.stroke(); }
+   else if(s.shape==="star"){ g.beginPath(); for(var k2=0;k2<10;k2++){ var rr=k2%2?r*0.45:r; var an2=k2*Math.PI/5-Math.PI/2; g.lineTo(Math.cos(an2)*rr,Math.sin(an2)*rr);} g.closePath(); g.fill(); g.stroke(); }
+   else { g.beginPath(); g.arc(0,0,r,0,Math.PI*2); g.fill(); g.stroke(); }
+   g.restore();
+   if(s.sayT>0&&s.say){
+    g.font="11px system-ui"; var tw=g.measureText(s.say).width+12;
+    var bx=Math.max(4,Math.min(W-tw-4,s.x-tw/2)), by=s.y-r-22;
+    g.fillStyle="rgba(255,255,255,.95)"; g.strokeStyle="#262b45";
+    g.beginPath(); g.roundRect? g.roundRect(bx,by,tw,18,6): g.rect(bx,by,tw,18); g.fill(); g.stroke();
+    g.fillStyle="#0a0b12"; g.fillText(s.say,bx+6,by+13);
+   }
+  }
+  for(var ci=0;ci<confetti.length;ci++){ var p2=confetti[ci]; g.fillStyle=p2.c; g.fillRect(p2.x,p2.y,4,4); }
+  g.fillStyle="rgba(255,255,255,.8)"; g.font="bold 13px system-ui";
+  g.fillText("Score "+score,10,20); g.fillText("Lv "+level,70,20);
+  var oleft=orbs.length; if(oleft>=0&&hero()) g.fillStyle="rgba(255,255,255,.55)", g.font="12px system-ui", g.fillText("orbs left: "+oleft,110,20);
+  if(over||won){
+   g.fillStyle="rgba(5,6,12,.72)"; g.fillRect(0,0,W,H);
+   g.fillStyle=won?"#a3e635":"#fb7185"; g.font="bold 30px system-ui"; g.textAlign="center";
+   g.fillText(won?"🏆 YOU WIN! "+score:"💀 GAME OVER",W/2,H/2);
+   g.fillStyle="rgba(255,255,255,.6)"; g.font="13px system-ui";
+   g.fillText("press R to restart",W/2,H/2+26); g.textAlign="left";
+  }
+ }
+ function reset(){
+  orbs=[];score=0;level=1;won=false;over=false;T=0;confetti=[];seed=7;
+  sprites.forEach(function(s){
+   s.x=s.start.x; s.y=s.start.y; s.dir=s.dir0; s.say=""; s.sayT=0; s.waitT=0; s.execs={};
+   s.scripts.forEach(function(sc){ sc.done=false; });
+  });
+  spawned=0;
+ }
+ function handle(e){
+  var k=e.key;
+  if(k.length===1) k=k.toUpperCase();
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","R","W","A","S","D"].indexOf(k)>=0) e.preventDefault();
+  if(e.type==="keydown"){ if(k==="R"&&!e.repeat){ reset(); } keys[k]=true; }
+  else keys[k]=false;
+ }
+ var iv=null,hooks=false;
+ return {
+  start:function(withKeys){
+   reset();
+   if(withKeys){ window.removeEventListener("keydown",handle,true); window.removeEventListener("keyup",handle,true); window.addEventListener("keydown",handle,true); window.addEventListener("keyup",handle,true); hooks=true; }
+   iv=setInterval(step,33);
+  },
+  stop:function(){ if(iv){ clearInterval(iv); iv=null; } if(hooks){ window.removeEventListener("keydown",handle,true); window.removeEventListener("keyup",handle,true); hooks=false; } },
+  pressKey:function(k,ms){ keys[k]=true; setTimeout(function(){ keys[k]=false; },ms||250); },
+  captureTo:function(c2){ draw(c2.getContext("2d")); },
+  isOver:function(){ return over||won; }
+ };
+}
+return {mk:mk,W:W,H:H};
+}
+var RT=GP_RUNTIME_FACTORY();
+/* ============ real API providers (BYO key) ============ */
+function modelRef(modelId,provId){
+ var m=modelById(modelId);
+ return (m.alias&&(m.alias[provId]||m.alias.openrouter))||m.name;
+}
+async function callProvider(text,modelId,provId){
+ var prov=null; for(var i=0;i<PROVIDERS.length;i++) if(PROVIDERS[i].id===provId) prov=PROVIDERS[i];
+ prov=prov||PROVIDERS[0];
+ var key=S.keys[provId];
+ if(!key) throw new Error("No API key saved for "+prov.name+" — add one on the Models page.");
+ var headers={"Content-Type":"application/json"},body;
+ var ref=modelRef(modelId,provId);
+ if(prov.style==="anthropic"){
+  headers["x-api-key"]=key; headers["anthropic-version"]="2023-06-01";
+  body={model:ref,max_tokens:700,messages:[{role:"user",content:text}]};
+ }else{
+  headers["Authorization"]="Bearer "+key;
+  if(provId==="openrouter"){ headers["HTTP-Referer"]=location.origin||"https://localhost"; headers["X-Title"]="GamePlatform"; }
+  body={model:ref,max_tokens:700,messages:[{role:"user",content:text}]};
+ }
+ var res=await fetch(prov.endpoint,{method:"POST",headers:headers,body:JSON.stringify(body)});
+ if(!res.ok){ var t=await res.text(); throw new Error(prov.name+" error "+res.status+": "+t.slice(0,180)); }
+ var data=await res.json();
+ if(data.choices&&data.choices[0]&&data.choices[0].message) return data.choices[0].message.content;
+ if(data.content&&data.content[0]&&data.content[0].text) return data.content[0].text;
+ return "(empty reply)";
+}
+/* ============ HTML5 game export ============ */
+function mkGameHtml(p){
+ var src="("+GP_RUNTIME_FACTORY.toString()+")();";
+ return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+ +'<title>'+esc(p.name)+'</title><style>body{margin:0;background:#0a0b12;color:#e6e8f5;font:16px system-ui;display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px}h1{font-size:20px;margin:4px 0}canvas{border:1px solid #262b45;border-radius:12px;background:#000;width:min(96vw,520px)}p{color:#9aa0c0;font-size:14px;margin:0}</style>'
+ +'</head><body><h1>'+esc(p.name)+'</h1><canvas id="c" width="480" height="320"></canvas><p>Arrows / WASD to play · R to restart · made with GamePlatform</p>'
+ +'<scr'+'ipt>var RT=('
+ +GP_RUNTIME_FACTORY.toString()
+ +')();RT.mk('+JSON.stringify(p.program)+',document.getElementById("c")).start(true);\x3C/script></body></html>';
+}
+function download(name,content,mime){
+ var a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([content],{type:mime||"text/plain"}));
+ a.download=name; document.body.appendChild(a); a.click();
+ setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },400);
+}
+/* ============ stage mounting ============ */
+var STAGE={rt:null};
+function stopStage(rt) {
+  if (STAGE.rt) { try { STAGE.rt.stop(); } catch(e) {} STAGE.rt = null; }
+}
+function mountStage(cid,key){
+ var c=document.getElementById(cid); if(!c) return;
+ stopStage();
+ var p=cur(); if(!p||!p.program) return;
+ var rt=RT.mk(p.program,c); rt.start(true); STAGE.rt=rt; STAGE.forKey=key;
+}
+/* ============ publish pipeline ============ */
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+function capture(cid){ var c=document.getElementById(cid); return c?c.toDataURL("image/png"):""; }
+async function runPublish(p,status){
+ if(!p||!p.program) return;
+ if(publish.busy) return;
+ if(!consume(ASSET_COST,"publish assets ("+p.name+")")){ alert("Not enough tokens for publishing (need "+fmt(ASSET_COST)+"). Top up on the Billing page."); return; }
+ publish.busy=true;
+ var c=document.createElement("canvas"); c.width=RT.W; c.height=RT.H;
+ var rt=RT.mk(p.program,c);
+ try{
+  status("① Verifying the game runs…"); rt.start(false); await sleep(1800);
+  var ok=!rt.isOver();
+  status("② Designing the app icon…");
+  var icon=document.createElement("canvas"); icon.width=icon.height=512; var g=icon.getContext("2d");
+  var gr=g.createLinearGradient(0,0,512,512); gr.addColorStop(0,"#7c5cff"); gr.addColorStop(1,"#22d3ee");
+  g.fillStyle=gr; g.beginPath(); g.roundRect? g.roundRect(0,0,512,512,110):g.rect(0,0,512,512); g.fill();
+  g.fillStyle="#0a0b12"; g.font="bold 250px system-ui"; g.textAlign="center"; g.textBaseline="middle";
+  g.fillText((p.name.trim()[0]||"G").toUpperCase(),256,276);
+  g.font="bold 30px system-ui"; g.fillStyle="rgba(10,11,18,.75)"; g.fillText("GAMEPLATFORM ★ "+PLANS[S.tier].name.toUpperCase(),256,470);
+  var iconUri=icon.toDataURL("image/png");
+  status("③ Capturing screenshots of key scenes…");
+  var shots=[];
+  for(var i=0;i<3;i++){
+   if(i===1) rt.pressKey("ArrowRight",400); if(i===2) rt.pressKey("ArrowUp",400);
+   await sleep(600); shots.push(c.toDataURL("image/png"));
+  }
+  status("④ Recording 9 trailer frames…");
+  var frames=[];
+  for(var f=0;f<9;f++){ await sleep(330); frames.push(c.toDataURL("image/png")); }
+  rt.stop();
+  status("⑤ Writing the store listing…");
+  var desc="«"+p.name+"» — "+(p.prompt?one(p.prompt,": a tiny arcade chase made by an AI squad"):"a tiny arcade chase made by an AI squad")+". Collect every orb, dodge the chaser, chase the high score. Built by "+p.squad.length+" AI models on the "+PLANS[S.tier].name+" plan of GamePlatform.";
+  if(!desc) desc=p.name+" — collect every orb and dodge the chaser.";
+  p.published={at:now(),icon:iconUri,screens:shots,frames:frames,description:desc,verified:ok};
+  p.updatedAt=now(); publish.busy=false; save();
+  return true;
+ }catch(e){ publish.busy=false; alert("Publishing failed: "+e.message); return false; }
+}
+var publish={busy:false};
+/* ============ UI helpers ============ */
+function el(id){ return document.getElementById(id); }
+function val(id){ var e=el(id); return e?e.value:""; }
+var CATS={event:"Events",control:"Control",motion:"Motion",looks:"Looks",game:"Game"};
+function opts(list,sel,labelFn){ return list.map(function(o){ var v=typeof o==="string"?o:o.id; return '<option value="'+esc(v)+'"'+(v===sel?" selected":"")+'>'+esc(labelFn?labelFn(o):o)+'</option>'; }).join(""); }
+function barHTML(label,used,cap){
+ var pct=cap>0?Math.min(100,used/cap*100):0;
+ var cls=pct>90?" hot":(pct>65?" hot":"");
+ return '<div class="row small" style="margin:6px 0"><span style="width:210px" class="muted">'+esc(label)+'</span><span class="bar"><i class="'+cls+'" style="width:'+pct.toFixed(1)+'%"></i></span><span class="small" style="width:130px;text-align:right">'+fmt(used)+' / '+fmt(cap)+'</span></div>';
+}
+function usagePanel(){
+ var total=PLANS[S.tier].tokenPool+S.credits;
+ var h='<div class="card"><div class="row"><span class="badge '+S.tier+'">'+esc(PLANS[S.tier].name)+' plan</span><span class="muted">'+fmt(poolUsed())+' of '+fmt(total)+' tokens used'+(S.credits?' (incl. '+fmt(S.credits)+' credits)':'')+'</span><span class="spacer"></span><button class="btn sm" data-act="go" data-view="billing">Top up / manage</button></div>';
+ h+=barHTML("Pool to date",poolUsed(),total);
+ windows().forEach(function(w){ h+=barHTML(w.label,w.used,w.cap); });
+ h+='</div>';
+ return h;
+}
+function navHTML(){
+ var mk=function(view,label,off){ return '<button class="tab'+(S.view===view?" on":"")+(off?" off":"")+'" data-act="go" data-view="'+view+'">'+label+'</button>'; };
+ var noCur=!cur();
+ return '<nav><span class="logo" data-act="go" data-view="dashboard">◆ GamePlatform</span>'
+ +mk("dashboard","Dashboard")
+ +mk("build","AI Build",noCur)
+ +mk("editor","Block Editor",noCur)
+ +mk("publish","Publish",noCur)
+ +mk("gallery","Gallery")
+ +mk("models","Models")
+ +mk("settings","Settings")
+ +'<span class="spacer"></span><span class="badge '+S.tier+'">'+esc(PLANS[S.tier].name)+' · '+fmt(tokensAvail())+' left</span>'
+ +'<button class="tab'+(S.view==="settings"?" on":"")+'" data-act="go" data-view="settings">'+S.profile.avatar+' '+esc(S.profile.name)+'</button></nav>';
+}
+/* ============ views ============ */
+function vDashboard(){
+ var h='<div class="h1">Welcome back, '+esc(S.profile.name)+' 👾</div>'
+ +'<div class="muted">Build games with AI squads or Scratch-style blocks, publish with auto-generated icon, screenshots and trailer — all free to send anywhere.</div>'
+ +usagePanel()
+ +'<div class="card"><div class="h2">＋ New game</div>'
+ +'<div class="row" style="margin-bottom:8px"><input id="ngName" placeholder="Game name" style="flex:1;min-width:180px"><select id="ngMode"><option value="ai">🤖 AI squad builds it</option><option value="blocks">🧩 I build it with blocks</option></select></div>'
+ +'<textarea id="ngPrompt" placeholder="Describe your game: e.g. “a dark cave treasure hunt where a ghost chases you” — the squad will take it from here."></textarea>'
+ +'<div class="row" style="margin-top:10px"><button class="btn pri" data-act="newGame">Create project</button><button class="btn" data-act="demo">⚡ Instant demo game</button><span class="muted small">Editing mode is chosen after the squad runs, too.</span></div></div>';
+ h+='<div class="h2">Your projects ('+S.projects.length+')</div><div class="grid">';
+ S.projects.forEach(function(p){
+  h+='<div class="card" style="margin:0"><b>'+esc(p.name)+'</b><div class="muted small">'+(p.mode==="ai"?"🤖 AI-built":"🧩 block-built")+' · edited '+timeAgo(p.updatedAt)+'</div>'
+  +(p.published?'<div class="row"><span class="chip">✅ Published</span><button class="btn sm" data-act="play" data-id="'+p.id+'">▶ Play</button><button class="btn sm" data-act="exportGame" data-id="'+p.id+'">⬇ HTML5</button></div>':'')
+  +'<div class="row" style="margin-top:8px"><button class="btn sm pri" data-act="open" data-id="'+p.id+'">Open</button><button class="btn sm danger" data-act="del" data-id="'+p.id+'">Delete</button></div></div>';
+ });
+ h+='</div>';
+ if(!S.projects.length) h+='<div class="card muted">No projects yet — create one or hit the demo button.</div>';
+ h+='<div class="card"><div class="h2">⭐ What makes this platform stand out</div><div class="grid">'
+ +'<div class="card" style="margin:0"><b>🤝 Multi-AI squads</b><div class="muted small">Free: 3 agents (+50K flat). Pro: 10 (5×). Max: 30 (10×). Each agent gets a real job.</div></div>'
+ +'<div class="card" style="margin:0"><b>🎬 Auto publishing</b><div class="muted small">Icon, scene screenshots, 9-frame trailer and a store listing — generated for you.</div></div>'
+ +'<div class="card" style="margin:0"><b>📤 Free HTML5 export</b><div class="muted small">One click → a standalone game file you can post anywhere.</div></div>'
+ +'<div class="card" style="margin:0"><b>🧩 Scratch-like blocks</b><div class="muted small">Prefer hands-on? Build every rule yourself in the block editor.</div></div>'
+ +'<div class="card" style="margin:0"><b>🔍 QA critic agent</b><div class="muted small">A dedicated reviewer that plays the build and calls out balance bugs.</div></div>'
+ +'<div class="card" style="margin:0"><b>🎟️ Honest cost preview</b><div class="muted small">See exact token cost of every squad run before you press run.</div></div>'
+ +'</div></div>';
+ return h;
+}
+function modelOptionsFor(tier,sel){
+ return opts(MODELS.filter(function(m){return canUseModel(tier,m);}),sel,function(m){return m.name;});
+}
+function vBuild(){
+ var p=cur();
+ if(!p) return '<div class="card">No project selected. <button class="btn" data-act="go" data-view="dashboard">Back to dashboard</button></div>';
+ var plan=PLANS[S.tier];
+ var cost=p.squad.length?squadCost(p.squad.length,S.tier):null;
+ var h='<div class="row"><button class="tab" data-act="go" data-view="dashboard">← Dashboard</button><span class="h2" style="margin:0">'+esc(p.name)+'</span><span class="chip">'+(p.mode==="ai"?"🤖 AI mode":"🧩 block mode")+'</span><span class="chip">lead: '+ (p.squad[0]?esc(modelById(p.squad[0].model).name):"—") +'</span></div>';
+ h+='<div class="row" style="margin:10px 0"><span class="muted">Engine:</span>'
+ +'<button class="btn sm'+(S.useRealApi?"":" pri")+'" data-act="engine" data-v="mock">🧠 Built-in mock brain</button>'
+ +'<button class="btn sm'+(S.useRealApi?" pri":"")+'" data-act="engine" data-v="real">🌐 Real API (your key)</button>'
+ +'<select id="provSel" class="small">'+opts(PROVIDERS,S.leadProv||"openrouter",function(x){return x.name;})+'</select>'
+ +'<span class="muted small">keys are added on the Models page</span></div>';
+ h+='<div class="card"><div class="h2">🤝 AI squad — '+p.squad.length+'/'+plan.squadMax+' agents <span class="muted small">· '+esc(plan.overheadLabel)+'</span></div>';
+ p.squad.forEach(function(a,i){
+  var r=roleById(a.role);
+  h+='<div class="row" style="margin:4px 0"><span style="font-size:20px">'+r.emoji+'</span><b style="width:210px">'+esc(r.label)+'</b><span class="small" style="color:#9aa0c0;flex:1;min-width:180px">'+esc(r.job)+'</span>'
+  +'<select data-act="agentModel" data-i="'+i+'">'+modelOptionsFor(S.tier,a.model)+'</select>'
+  +'<select data-act="agentRole" data-i="'+i+'">'+opts(ROLES.map(function(x){return x.id;}),a.role,function(x){return roleById(x).label;})+'</select>'
+  +'<button class="btn sm danger" data-act="delAgent" data-i="'+i+'">✕</button></div>';
+ });
+ h+='<div class="row" style="margin-top:8px">'
+ +'<button class="btn" data-act="addAgent"'+(p.squad.length>=plan.squadMax?" disabled":"")+'>＋ Add agent'+(p.squad.length>=plan.squadMax?" ("+plan.squadMax+" max on "+plan.name+")":"")+'</button>'
+ +'<button class="btn" data-act="autoSquad">✨ Suggest squad</button>'
+ +'<button class="btn pri" data-act="runSquad">▶ Run AI squad</button><button class="btn" data-act="toEditor">🧩 Open block editor</button>';
+ if(cost) h+='<span class="muted small" style="margin-left:auto">Cost preview: base '+fmt(cost.base)+" · squad overhead → <b>"+fmt(cost.total)+" tokens</b> · you have "+fmt(tokensAvail());
+ h+='</div></div>';
+ h+='<div class="row" style="align-items:flex-start"><div style="flex:1;min-width:270px"><div class="h2">💬 Squad workspace</div>';
+ p.chat.slice(-24).forEach(function(m){
+  h+='<div class="msg '+(m.who==="me"?"me":m.who==="sys"?"ai sys":"ai")+'"'+(m.who==="sys"?' style="opacity:.7;font-size:13px"':'')+'>'+esc(m.text).replace(/\n/g,"<br>")+'</div>';
+ });
+ if(p.busy) h+='<div class="msg ai">⏳ agents are working…</div>';
+ h+='<div class="row"><input id="chatIn" placeholder="Add direction for the squad…" style="flex:1"><button class="btn" data-act="chatSend">Send</button></div>';
+ h+='</div><div style="flex:1;min-width:270px"><div class="h2">🎮 Live preview</div>';
+ if(p.program) h+='<canvas id="stage" class="stage" width="480" height="320"></canvas><div class="row" style="margin-top:6px"><span class="muted small">click the game, then: arrows/WASD · R restart</span><span class="spacer"></span><button class="btn sm" data-act="go" data-view="editor">Edit blocks</button><button class="btn sm" data-act="go" data-view="publish">Publish →</button></div>';
+ else h+='<div class="card muted">No program yet — run the squad, or open the block editor.</div>';
+ h+='</div></div>';
+ return h;
+}
+/* ============ block editor ============ */
+function argHTML(b,path,def){
+ var out="";
+ (def.args||[]).forEach(function(a){
+  var an=a.n,v=b.args&&b.args[an]!=null?b.args[an]:a.d;
+  if(a.t==="key"){ out+='<select data-act="arg" data-path="'+path+'" data-an="'+an+'">'+opts(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","W","A","S","D"," "],v)+'</select>'; }
+  else if(a.t==="shape"){ out+='<select data-act="arg" data-path="'+path+'" data-an="'+an+'">'+opts(["arrow","circle","square","diamond","star"],v||"circle")+'</select>'; }
+  else if(a.t==="color"){ out+='<input type="color" value="'+esc(v)+'" style="padding:1px;width:42px;height:26px" data-act="arg" data-path="'+path+'" data-an="'+an+'">'; }
+  else if(a.t==="num"){ out+='<input type="number" step="any" value="'+esc(v)+'" style="width:74px" data-act="arg" data-path="'+path+'" data-an="'+an+'">'; }
+  else { out+='<input type="text" value="'+esc(v)+'" style="width:130px" data-act="arg" data-path="'+path+'" data-an="'+an+'">'; }
+ });
+ return out;
+}
+function blHTML(b,path){
+ var def=BLOCK_DEFS[b.kind]||{cat:"",label:b.kind,args:[],kids:false};
+ var upDown='<button class="btn sm" data-act="mvUp" data-path="'+path+'">↑</button><button class="btn sm" data-act="mvDn" data-path="'+path+'">↓</button><button class="btn sm danger x" data-act="delBlk" data-path="'+path+'">✕</button>';
+ var h='<div class="blk k-'+esc(def.cat)+'"><span class="small" style="color:#aab1d4">'+esc(def.label)+'</span>'+argHTML(b,path,def)+upDown+'</div>';
+ if(def.kids){
+  var kids=(b.children||[]).map(function(c,i){ return blHTML(c,path+"."+i); }).join("");
+  var addSel='<select data-act="addChild" data-path="'+path+'" style="font-size:12px"><option value="">＋ add block inside…</option>';
+  Object.keys(BLOCK_DEFS).forEach(function(k){ addSel+='<option value="'+k+'">'+esc(BLOCK_DEFS[k].label)+'</option>'; });
+  addSel+='</select>';
+  h+='<div class="kids">'+kids+'<div style="margin:4px 0">'+addSel+'</div></div>';
+ }
+ return h;
+}
+function vEditor(){
+ var p=cur();
+ if(!p) return '<div class="card">No project selected.</div>';
+ if(!p.program){ p.program={bg:"#101426|#0a0c18",sprites:[{name:"hero",shape:"circle",color:"#22d3ee",size:22,x:240,y:160,dir:0,blocks:[]}]}; }
+ if(p.spriteSel>=p.program.sprites.length) p.spriteSel=0;
+ var sp=p.program.sprites[p.spriteSel];
+ var bgv=(p.program.bg||"#101426|#0a0c18").split("|");
+ var h='<div class="row"><button class="tab" data-act="go" data-view="build">← AI Build</button><b>'+esc(p.name)+'</b><span class="muted small">Scratch-style block editor · changes save & preview automatically</span></div>';
+ h+='<div class="row" style="margin:10px 0">';
+ p.program.sprites.forEach(function(s2,i){
+  h+='<button class="btn sm'+(i===p.spriteSel?" pri":"")+'" data-act="spriteSel" data-i="'+i+'">'+esc(s2.name)+'</button>';
+ });
+ h+='<button class="btn sm" data-act="addSprite">＋ sprite</button>'
+ +'<button class="btn sm danger" data-act="delSprite"'+(p.program.sprites.length<2?" disabled":"")+'>delete sprite</button>'
+ +'<span class="spacer"></span>'
+ +'<span class="small muted">bg top</span><input type="color" value="'+esc(bgv[0])+'" data-act="bg" data-n="0" style="padding:1px;width:42px;height:28px">'
+ +'<span class="small muted">bottom</span><input type="color" value="'+esc(bgv[1])+'" data-act="bg" data-n="1" style="padding:1px;width:42px;height:28px">'
+ +'</div>';
+ h+='<div class="row" style="align-items:flex-start"><div style="flex:1.2;min-width:300px">';
+ h+='<div class="card"><div class="h2">🧱 Blocks — '+esc(sp.name)+'</div>';
+ sp.blocks.forEach(function(b,i){ h+=blHTML(b,String(i)); });
+ h+='<select data-act="addTop" style="margin-top:6px"><option value="">＋ add script / block…</option>';
+ Object.keys(BLOCK_DEFS).forEach(function(k){ h+='<option value="'+k+'">'+esc(BLOCK_DEFS[k].label)+'</option>'; });
+ h+='</select></div></div>';
+ h+='<div style="flex:1;min-width:270px"><div class="h2">▶ Test</div><canvas id="stage" class="stage" width="480" height="320"></canvas>'
+ +'<div class="muted small" style="margin-top:6px">click the game, then: arrows/WASD to move · R to restart · collect all orbs to win · avoid anything named chaser!</div>'
+ +'<div class="row" style="margin-top:8px"><button class="btn pri" data-act="go" data-view="publish">Publish →</button></div></div></div>';
+ return h;
+}
+/* ============ publish ============ */
+function vPublish(){
+ var p=cur();
+ if(!p) return '<div class="card">No project selected.</div>';
+ if(!p.program) return '<div class="card">Build a program first (run the AI squad or use the block editor).</div>';
+ if(!p.published){
+  return '<div class="h1">🎬 Publish “'+esc(p.name)+'”</div>'
+  +'<div class="card"><div class="h2">The pipeline does it all for you</div>'
+  +'<div class="muted small" style="margin-bottom:10px">① verifies the game runs → ② designs an app icon → ③ captures screenshots of key scenes → ④ records a 9-frame trailer → ⑤ writes the store listing.</div>'
+  +'<div class="row"><button class="btn pri" data-act="publishRun">Run pipeline · '+fmt(ASSET_COST)+' tokens</button><button class="btn" data-act="go" data-view="editor">Not ready — back to editor</button></div>'
+  +'<div class="muted small" id="pubStatus" style="margin-top:10px"></div></div>';
+ }
+ var pu=p.published;
+ var h='<div class="row"><span class="h1" style="margin:0">✅ Published — '+esc(p.name)+'</span><span class="chip">free to share anywhere</span><span class="spacer"></span><button class="btn pri" data-act="exportGame" data-id="'+p.id+'">⬇ Download HTML5 game</button></div>';
+ h+='<div class="row" style="align-items:flex-start;margin-top:10px"><div class="card" style="flex:1;min-width:270px;margin:6px">'
+ +'<img class="thumb" src="'+pu.icon+'" alt="icon" style="max-width:180px">'
+ +'<div class="h2">App icon</div><div class="muted small">512×512, auto-designed. Right-click / long-press to save.</div></div>';
+ h+='<div class="card" style="flex:1.4;min-width:300px;margin:6px"><div class="h2">🎞 Trailer</div><img id="trailer" class="thumb" src="'+pu.frames[0]+'" alt="trailer"><div class="muted small">cycles the 9 captured frames</div>'
+ +'<div class="h2">Key scenes</div><div class="row">'+pu.screens.map(function(s){ return '<img class="thumb" style="width:150px" src="'+s+'">'; }).join("")+'</div></div></div>';
+ h+='<div class="card"><div class="h2">Store listing (auto-written)</div>'+esc(pu.description)+'</div>';
+ h+='<div class="row" style="align-items:flex-start"><div style="flex:1.2;min-width:270px"><div class="h2">🎮 Play it here</div><canvas id="stage" class="stage" width="480" height="320"></canvas></div>'
+ +'<div style="flex:1;min-width:250px"><div class="h2">📤 Send it anywhere — free</div>'
+ +'<div class="muted small" style="margin-bottom:8px">Download the HTML5 file and post it to itch.io, Discord, a blog, a USB stick, anywhere. It runs on double-click in any browser, forever, no install.</div>'
+ +'<button class="btn" data-act="exportGame" data-id="'+p.id+'">⬇ Export standalone HTML5</button>'
+ +'<button class="btn" data-act="remix" data-id="'+p.id+'">🍴 Remix this game</button>'
+ +'<button class="btn" data-act="exportListing" data-id="'+p.id+'">📋 Copy listing text</button></div></div>';
+ return h;
+}
+function vGallery(){
+ var pub=S.projects.filter(function(p){ return p.published; });
+ var h='<div class="h1">🌈 Community gallery</div><div class="muted">Every published game — play, remix, export. Sharing out of the platform is always free.</div>';
+ if(!pub.length) return h+'<div class="card muted">Nothing published yet. Publish a project and it lands here.</div>';
+ h+='<div class="grid">';
+ pub.forEach(function(p){
+  h+='<div class="card" style="margin:0"><img class="thumb" src="'+p.published.icon+'" style="max-width:110px">'
+  +'<b style="display:block;margin-top:8px">'+esc(p.name)+'</b><div class="muted small">'+timeAgo(p.published.at)+' · by '+esc(S.profile.name)+'</div>'
+  +'<div class="muted small" style="margin:6px 0">'+esc(p.published.description.slice(0,90))+'…</div>'
+  +'<div class="row"><button class="btn sm pri" data-act="play" data-id="'+p.id+'">▶ Play</button><button class="btn sm" data-act="remix" data-id="'+p.id+'">🍴 Remix</button></div></div>';
+ });
+ h+='</div>';
+ return h;
+}
+/* ============ models ============ */
+function vModels(){
+ var h='<div class="h1">⚙ AI models</div>';
+ ["free","pro","max"].forEach(function(t){
+  var plan=PLANS[t];
+  h+='<div class="h2">'+(t==="free"?"🟢 Free":t==="pro"?"🟣 Pro":"🟩 Max")+' tier models</div><div class="grid">';
+  MODELS.filter(function(m){return m.tier===t;}).forEach(function(m){
+   var ok=canUseModel(S.tier,m);
+   h+='<div class="card" style="margin:0;opacity:'+(ok?1:.55)+'"><b>'+esc(m.name)+'</b> <span class="muted small">'+esc(m.vendor)+'</span><div class="muted small" style="margin:4px 0">'+esc(m.note)+'</div>'
+   +'<span class="chip'+(ok?"":" lock")+'">'+(ok?"unlocked":plan.name+" only")+'</span></div>';
+  });
+  h+='</div>';
+ });
+ h+='<div class="card"><div class="h2">🔑 Bring your own API keys (optional)</div><div class="muted small" style="margin-bottom:8px">Paste a key from any provider — the platform calls it live, straight from this file. Keys stay in this browser only.</div>';
+ PROVIDERS.forEach(function(pr){
+  h+='<div class="row" style="margin:6px 0"><b style="width:170px">'+esc(pr.name)+'</b><input id="key_'+pr.id+'" type="password" placeholder="'+(S.keys[pr.id]?"••• saved ••• (paste to replace)":"paste API key")+'" style="flex:1;min-width:180px">'
+  +'<button class="btn sm" data-act="saveKey" data-prov="'+pr.id+'">Save</button>'
+  +'<a class="small" href="'+pr.docs+'" target="_blank">docs ↗</a>'+(S.keys[pr.id]?'<span class="chip">✅ ready</span>':'')+'</div>';
+ });
+ h+='<div class="row" style="margin-top:12px"><label class="toggle" data-act="toggleReal"><span class="bat'+(S.useRealApi?" on":"")+'"><i></i></span> Use real API for squad runs (off = instant built-in brain, zero tokens… actually few)</label></div>'
+ +'<div class="muted small" style="margin-top:6px">Note: some providers block direct browser calls (CORS). OpenRouter and the Hugging Face router both work great from a file:// page.</div></div>';
+ return h;
+}
+/* ============ settings ============ */
+function vSettings(){
+ var t=S.stTab||"general";
+ var tabs=[["general","General"],["usage","Usage"],["privacy","Privacy"],["account","Account"],["billing","Billing"]];
+ var h='<div class="h1">⚙ Settings</div><div class="sttabs">';
+ tabs.forEach(function(x){ h+='<button class="tab'+(t===x[0]?" on":"")+'" data-act="stTab" data-t="'+x[0]+'">'+x[1]+'</button>'; });
+ h+='</div>';
+ if(t==="general"){
+  h+='<div class="card"><div class="h2">Plan</div><div class="grid">';
+  Object.keys(PLANS).forEach(function(id){ var plan=PLANS[id];
+   h+='<div class="plan'+(S.tier===id?" hot":"")+'"><b>'+esc(plan.name)+'</b>'+(S.tier===id?' <span class="chip">current</span>':"")+'<div class="price">'+(plan.monthly?("$"+plan.monthly+"/mo"):"$0")+'</div><div class="muted small" style="margin-bottom:8px">or $'+plan.once+' once · '+fmt(plan.tokenPool)+' tokens · '+plan.squadMax+'-agent squads</div>';
+   if(S.tier!==id) h+='<button class="btn sm pri" data-act="setTier" data-v="'+id+'">Switch to '+esc(plan.name)+'</button>';
+   h+='</div>';
+  });
+  h+='</div></div><div class="card"><div class="h2">Danger zone</div><button class="btn danger" data-act="wipe">🗑 Erase everything (projects, keys, usage)</button></div>';
+ }
+ else if(t==="usage"){
+  var recent=S.usage.slice(-12).reverse();
+  h+=usagePanel()+'<div class="card"><div class="h2">Recent token events</div>'+(recent.length?'<table><tr><th>when</th><th>what</th><th>tokens</th></tr>'+recent.map(function(e){ return "<tr><td class='muted small'>"+timeAgo(e.at)+"</td><td>"+esc(e.label||"tokens")+"</td><td>"+fmt(e.n)+"</td></tr>"; }).join("")+'</table>':'<span class="muted">Nothing yet.</span>');
+  h+='<div class="muted small" style="margin-top:8px">Hourly window resets every 3 hours · weekly window resets every 7 days · base pool renews with your plan.</div></div>';
+ }
+ else if(t==="privacy"){
+  var rows=[["saveHistory","Save squad transcripts"],["shareUsage","Share anonymous usage stats"],["publicProfile","Show my profile in the gallery"]];
+  h+='<div class="card">';
+  rows.forEach(function(r){
+   h+='<div class="row" style="margin:10px 0"><label class="toggle" data-act="togglePriv" data-k="'+r[0]+'"><span class="bat'+(S.privacy[r[0]]?" on":"")+'"><i></i></span></label> '+r[1]+'</div>';
+  });
+  h+='<div class="row" style="margin-top:12px"><button class="btn" data-act="exportData">⬇ Export all my data (JSON)</button></div></div>';
+ }
+ else if(t==="account"){
+  h+='<div class="card"><div class="h2">Your profile</div><div class="row"><span class="muted">name</span><input id="accName" value="'+esc(S.profile.name)+'" style="width:200px"><span class="muted">avatar</span><input id="accAvatar" value="'+esc(S.profile.avatar)+'" style="width:80px"><button class="btn pri" data-act="saveProfile">Save</button></div>'
+  +'<div class="muted small" style="margin-top:10px">Everything lives in this browser\'s localStorage ('+SKEY+'). No account server, no email, no tracking.</div></div>';
+ }
+ else h+=billing();
+ return h;
+}
+function billing(){
+ var plan=PLANS[S.tier];
+ var pr=S.billingMode==="monthly"?plan.monthly:plan.once;
+ var h='<div class="card"><div class="h2">Manage plan</div>'
+ +'<div class="row" style="margin-bottom:10px"><button class="btn sm'+(S.billingMode==="monthly"?" pri":"")+'" data-act="billMode" data-v="monthly">Monthly</button><button class="btn sm'+(S.billingMode==="once"?" pri":"")+'" data-act="billMode" data-v="once">Pay once</button></div>';
+ Object.keys(PLANS).forEach(function(id){ var p2=PLANS[id];
+  h+='<div class="row" style="margin:8px 0"><b style="width:80px">'+esc(p2.name)+'</b><span class="muted" style="flex:1">'+fmt(p2.tokenPool)+' tokens · '+p2.squadMax+'-agent squads</span><b>'+(p2.monthly?"$"+(S.billingMode==="monthly"?p2.monthly:p2.once):"$0")+'</b>'
+  +(S.tier===id?'<span class="chip">current</span>':'<button class="btn sm pri" data-act="setTier" data-v="'+id+'">Choose</button>');
+  h+='</div>';
+ });
+ h+='</div><div class="card"><div class="h2">Credit packs</div><div class="grid">';
+ PACKS.forEach(function(pk){
+  h+='<div class="card" style="margin:0"><b>'+pk.label+'</b><div class="price small">$'+pk.price+'</div><button class="btn sm lime" data-act="buyPack" data-i="'+pk.id+'">Buy · stack on top of pool</button></div>';
+ });
+ h+='</div><div class="muted small" style="margin-top:8px">Credits never expire and stack on every plan.</div></div>';
+ if(S.history.length) h+='<div class="card"><div class="h2">Billing history</div><table><tr><th>when</th><th>what</th><th>amount</th></tr>'+S.history.slice(-8).reverse().map(function(x){ return "<tr><td class='muted small'>"+timeAgo(x.at)+"</td><td>"+esc(x.what)+"</td><td>$"+x.amt+"</td></tr>"; }).join("")+'</table></div>';
+ return h;
+}
+/* ============ actions ============ */
+function go(view){ if(view==="billing"){ S.view="settings"; S.stTab="billing"; } else { S.view=view; } render(); }
+function findProj(id){ for(var i=0;i<S.projects.length;i++) if(S.projects[i].id===id) return S.projects[i]; }
+function listByPath(pop,path){
+ var pp=path.split(".").map(Number), list=pop.blocks, parent=null;
+ for(var i=0;i<pp.length-1;i++){ parent=list[pp[i]]; list=parent.children; }
+ return {list:list,idx:pp[pp.length-1]};
+}
+var ACTS={
+ go:function(a){ go(a.view); },
+ open:function(a){ var p=findProj(a.id); if(p){ S.cur=p.id; go(p.published?"publish":(p.mode==="ai"?"build":"editor")); } },
+ play:function(a){ var p=findProj(a.id); if(p){ S.cur=p.id; go("publish"); } },
+ del:function(a){ if(!confirm("Delete this project?")) return; S.projects=S.projects.filter(function(p){return p.id!==a.id;}); if(S.cur===a.id)S.cur=null; },
+ newGame:function(){
+  var p=createProject(val("ngName")||"Untitled Game",val("ngPrompt"),val("ngMode"));
+  if(p.mode==="ai") p.squad=suggestAgents(S.tier,p.prompt);
+  if(p.mode==="blocks") S.view="editor"; else S.view="build";
+  render(); save();
+ },
+ demo:function(){
+  var p=createProject("Orb Rush (demo)","a glowing arcade chase: collect every orb, dodge the chaser","ai");
+  p.squad=suggestAgents(S.tier,p.prompt);
+  p.program=buildProgram(p.prompt,p.params);
+  p.chat=[{who:"sys",text:"Demo loaded — this is what a squad run compiles to. Open the block editor to see inside, or publish right away."}];
+  S.view="build"; render(); save();
+ },
+ engine:function(a){ S.useRealApi=(a.v==="real"); },
+ chatSend:function(){
+  var p=cur(); if(!p) return; var t=val("chatIn").trim(); if(!t) return;
+  p.prompt=p.prompt?p.prompt+"\n"+t:t;
+  p.chat.push({who:"me",text:t});
+  p.chat.push({who:"sys",text:"Noted. Hit ▶ Run AI squad to apply it."});
+ },
+ toEditor:function(){ S.view="editor"; render(); save(); },
+ addAgent:function(){ var p=cur(); if(!p||p.squad.length>=PLANS[S.tier].squadMax) return;
+  var pool=MODELS.filter(function(m){return canUseModel(S.tier,m);});
+  p.squad.push({id:uid(),role:["designer","programmer","artist","qa","narrative","producer","audio"][p.squad.length%7],model:pool[p.squad.length%pool.length].id}); },
+ delAgent:function(a){ var p=cur(); if(p) p.squad.splice(+a.i,1); },
+ agentModel:function(a){ var p=cur(); if(p&&p.squad[+a.i]) p.squad[+a.i].model=a.v; },
+ agentRole:function(a){ var p=cur(); if(p&&p.squad[+a.i]) p.squad[+a.i].role=a.v; },
+ autoSquad:function(){ var p=cur(); if(p) p.squad=suggestAgents(S.tier,p.prompt); },
+ runSquad:async function(){
+  var p=cur(); if(!p||p.busy) return;
+  if(!p.squad.length){ alert("Add at least one agent first."); return; }
+  var cost=squadCost(p.squad.length,S.tier);
+  if(!consume(cost.total,"AI squad run · "+p.squad.length+" agents · "+p.name)){ alert("Not enough tokens: needs "+fmt(cost.total)+", you have "+fmt(tokensAvail())+". Free up or top up in Billing."); return; }
+  p.busy=true;
+  p.chat.push({who:"me",text:p.prompt||"(build me a game!)"});
+  p.chat.push({who:"sys",text:"Squad launched · "+p.squad.length+" agents · cost "+fmt(cost.total)+" tokens"+(S.tier==="free"?" (incl. +50K flat overhead)":S.tier==="pro"?" (incl. 5× overhead)":" (incl. 10× overhead)")});
+  save(); render();
+  for(var i=0;i<p.squad.length;i++){
+   var ag=p.squad[i],text;
+   if(S.useRealApi){
+    try{
+     var prov=el("provSel")?el("provSel").value:(S.leadProv||"openrouter"); S.leadProv=prov;
+     text=await callProvider("You are the "+roleById(ag.role).label+" of a game-dev AI squad. Game brief: "+(p.prompt||"a fun tiny arcade game")+". Reply with 2-3 short sentences performing your job. If you are the Programmer, end with a block list (whenFlag/whenKey/forever/move/point/goto/spawn/edgeBounce).",ag.model,prov);
+     text="🤖 ["+roleById(ag.role).label+" · "+modelById(ag.model).name+" · real API] "+text;
+    }catch(e){
+     text="⚠️ Real API failed ("+e.message.slice(0,140)+") — fell back to the built-in brain.\n"+mockChat(ag,p.prompt,S.tier);
+    }
+   } else text=mockChat(ag,p.prompt,S.tier);
+   p.chat.push({who:"ai",text:text});
+   p.updatedAt=now(); save(); render();
+  }
+  if(p.squad.some(function(a){return a.role==="programmer";})||!p.program) p.program=buildProgram(p.prompt,p.params);
+  p.chat.push({who:"sys",text:"✅ Run complete · program compiled → live preview updated. Open the block editor to tweak, or Publish."});
+  p.busy=false; p.updatedAt=now(); save(); render();
+ },
+ spriteSel:function(a){ var p=cur(); if(p){ p.spriteSel=+a.i; } },
+ addSprite:function(){ var p=cur(); if(!p||!p.program) return;
+  p.program.sprites.push({name:"sprite"+p.program.sprites.length,shape:"circle",color:"#a3e635",size:22,x:100,y:100,dir:90,blocks:[]});
+  p.spriteSel=p.program.sprites.length-1; },
+ delSprite:function(){ var p=cur(); if(!p||!p.program||p.program.sprites.length<2) return;
+  p.program.sprites.splice(p.spriteSel,1); p.spriteSel=0; },
+ bg:function(a){ var p=cur(); if(!p||!p.program) return; var bgv=(p.program.bg||"#101426|#0a0c18").split("|"); bgv[+a.n]=a.v; p.program.bg=bgv.join("|"); },
+ addTop:function(a){ var p=cur(); if(!p||!p.program||!a.v) return;
+  var sp=p.program.sprites[p.spriteSel]||p.program.sprites[0]; if(!sp) return;
+  var def=BLOCK_DEFS[a.v];
+  if(def.kids){ sp.blocks.push(bl(a.v,{},[])); }
+  else{
+   var last=sp.blocks[sp.blocks.length-1];
+   if(last&&last.children&&BLOCK_DEFS[last.kind]&&BLOCK_DEFS[last.kind].kids) last.children.push(bl(a.v));
+   else sp.blocks.push(bl("whenFlag",{},[bl(a.v)]));
+  }
+  p.updatedAt=now(); save(); render(); },
+ addChild:function(a){ if(!a.v) return; var p=cur(); if(!p||!p.program) return;
+  var ref=listByPath(p.program,a.path); var def=BLOCK_DEFS[a.v];
+  ref.list[ref.idx].children.push(bl(a.v,{},def.kids?[]:undefined));
+  p.updatedAt=now(); save(); render(); },
+ arg:function(a){ var p=cur(); if(!p||!p.program) return;
+  var ref=listByPath(p.program,a.path); var b=ref.list[ref.idx];
+  if(b) b.args[a.an]=(a.an==="text")?a.v:(isNaN(parseFloat(a.v))?a.v:parseFloat(a.v));
+  p.updatedAt=now(); save(); },
+ delBlk:function(a){ var p=cur(); if(!p||!p.program) return; var ref=listByPath(p.program,a.path); ref.list.splice(ref.idx,1); p.updatedAt=now(); save(); render(); },
+ mvUp:function(a){ var p=cur(); if(!p||!p.program) return; var ref=listByPath(p.program,a.path); var i=ref.idx; if(i>0){ var t=ref.list[i-1]; ref.list[i-1]=ref.list[i]; ref.list[i]=t; } p.updatedAt=now(); save(); render(); },
+ mvDn:function(a){ var p=cur(); if(!p||!p.program) return; var ref=listByPath(p.program,a.path); var i=ref.idx; if(i<ref.list.length-1){ var t=ref.list[i+1]; ref.list[i+1]=ref.list[i]; ref.list[i]=t; } p.updatedAt=now(); save(); render(); },
+ publishRun:async function(){
+  var p=cur(); if(!p||publish.busy) return;
+  var ok=await runPublish(p,function(t){ var e=el("pubStatus"); if(e)e.textContent=t; });
+  if(ok){ S.view="publish"; }
+  save(); render();
+ },
+ exportGame:function(a){ var p=findProj(a.id)||cur(); if(!p||!p.program){ alert("Build a game first."); return; }
+  download(slug(p.name)+".html",mkGameHtml(p),"text/html"); },
+ exportListing:function(a){ var p=findProj(a.id)||cur(); if(!p||!p.published) return;
+  try{ navigator.clipboard.writeText(p.published.description); alert("Listing copied to clipboard!"); }catch(e){ download("listing.txt",p.published.description); } },
+ remix:function(a){ var p=findProj(a.id); if(!p||!p.program) return;
+  var np=createProject(p.name+" (remix)",p.prompt,p.mode); np.program=JSON.parse(JSON.stringify(p.program)); np.params=JSON.parse(JSON.stringify(p.params));
+  S.view="editor"; S.cur=np.id; render(); save(); },
+ setTier:function(a){
+  if(["pro","max"].indexOf(a.v)>=0&&!confirm("Switch to "+PLANS[a.v].name+"? (Demo platform: billing is simulated.)")) return;
+  S.tier=a.v; S.poolStart=now();
+  S.projects.forEach(function(p){ if(p.squad.length>PLANS[S.tier].squadMax) p.squad=p.squad.slice(0,PLANS[S.tier].squadMax); });
+  save(); render();
+ },
+ buyPack:function(a){ var pk=null; PACKS.forEach(function(x){ if(x.id===a.i) pk=x; }); if(!pk) return;
+  S.credits+=pk.tokens;
+  S.history.push({at:now(),what:pk.label+" credit pack",amt:pk.price});
+  alert(pk.label+" added to your token pool. (Demo platform: payment simulated.)");
+  save(); render(); },
+ billMode:function(a){ S.billingMode=a.v; },
+ stTab:function(a){ S.stTab=a.t; },
+ toggleReal:function(){ S.useRealApi=!S.useRealApi; },
+ togglePriv:function(a){ S.privacy[a.k]=!S.privacy[a.k]; },
+ saveKey:function(a){ var v=val("key_"+a.prov).trim(); if(!v) return; S.keys[a.prov]=v; S.useRealApi=true; save(); render(); },
+ saveProfile:function(){ S.profile.name=val("accName")||S.profile.name; S.profile.avatar=val("accAvatar")||"👾"; save(); render(); },
+ exportData:function(){ download("gameplatform-data.json",JSON.stringify({profile:S.profile,tier:S.tier,usage:S.usage,projects:S.projects,credits:S.credits},null,2),"application/json"); },
+ wipe:function(){ if(!confirm("Erase EVERYTHING on this browser?")) return; localStorage.removeItem(SKEY); location.reload(); }
+};
+document.addEventListener("click",function(e){
+ var t=e.target.closest("[data-act]"); if(!t) return;
+ var a=t.dataset; var f=ACTS[a.act];
+ if(f){ var r=f(a); if(r&&r.catch) r.catch(function(er){ console.error(er); }); if(!f.async){} save(); render(); }
+});
+document.addEventListener("change",function(e){
+ var t=e.target.closest("[data-act]"); if(!t) return;
+ var a=t.dataset;
+ if(a.act==="arg"||a.act==="agentModel"||a.act==="agentRole"||a.act==="bg"){
+  var f=ACTS[a.act]; if(f){ f(a); save(); render(); }
+ }
+ else if(a.act==="addChild"||a.act==="addTop"){ var f2=ACTS[a.act]; if(f2){ a.v=e.target.value; f2(a); } }
+});
+/* ============ render ============ */
+var TRAILER_T=null;
+function stopTimers(){ if(TRAILER_T){ clearInterval(TRAILER_T); TRAILER_T=null; } }
+function render(){
+ stopStage();
+ var v=S.view||"dashboard", body;
+ if(v==="dashboard") body=vDashboard();
+ else if(v==="build") body=vBuild();
+ else if(v==="editor") body=vEditor();
+ else if(v==="publish") body=vPublish();
+ else if(v==="gallery") body=vGallery();
+ else if(v==="models") body=vModels();
+ else body=vSettings();
+ el("app").innerHTML=navHTML()+body;
+ if(v==="build"||v==="editor") mountStage("stage",v);
+ if(v==="publish"){
+  var p=cur();
+  if(p&&p.published&&p.published.frames.length){
+   var fi=0;
+   TRAILER_T=setInterval(function(){ fi=(fi+1)%p.published.frames.length; var img=el("trailer"); if(img) img.src=p.published.frames[fi]; },420);
+   mountStage("stage",v);
+  }
+ }
+}
+render();
+</script>
+</body>
+</html>
