@@ -28,11 +28,26 @@ const order = ['rng.js', 'gen.js', 'audio.js', 'environment.js', 'player.js', 'w
 let js = '';
 for (const f of order) {
   const src = read('src/' + f)
-    .replace(/^import[^\n]*from[^\n]*;\s*$/gm, '')
-    .replace(/^import\s*\{[^}]*\}\s*from[^;]*;\s*$/gm, '')
+    .replace(/^import\s+[^;]*?from\s+'\.[^']*';\s*$/gm, '')
+    .replace(/^import\s*\{?[^;{}]*?\}?\s*from\s*"\.[^"]*";\s*$/gm, '')
+    .replace(/^import\s+'\.[^']*';\s*$/gm, '')
     .replace(/^export\s+(const|function|class|let|var)\s/gm, '$1 ');
   js += `\n/* ===== ${f} ===== */\n` + src;
 }
+if (/from\s+'\./.test(js)) throw new Error('relative imports survived the build');
+
+let seen = 0;
+js = js.replace(/^(import \* as THREE from 'three';)\s*$/gm, (_m, line) => {
+  seen++;
+  return seen === 1 ? line : '';
+});
+const kept = (js.match(/^import \* as THREE from 'three';/gm) || []).length;
+if (kept !== 1 || seen === 0) throw new Error(`expected exactly one THREE import, kept ${kept} of ${seen}`);
+[{ name: 'EffectComposer' }, { name: 'RenderPass' }, { name: 'UnrealBloomPass' }, { name: 'OutputPass' }].forEach(({ name }) => {
+  if (!new RegExp(`^import \\{[^}]*\\b${name}\\b`, 'm').test(js)) {
+    throw new Error(`addon import missing: ${name}`);
+  }
+});
 
 const page = html
   .replace('<link rel="stylesheet" href="style.css" />', `<style>\n${css}\n</style>`)
