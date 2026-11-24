@@ -16,6 +16,7 @@ export class Player {
     this.grounded = true;
     this.bobPhase = 0;
     this.bobAmt = 0;
+    this.landImpulse = 0;
     this.sprinting = false;
 
     camera.rotation.order = 'YXZ';
@@ -46,9 +47,10 @@ export class Player {
 
     this.camera.position.set(
       this.pos.x,
-      this.pos.y + EYE + Math.sin(this.bobPhase) * this.bobAmt,
+      this.pos.y + EYE + Math.sin(this.bobPhase) * this.bobAmt - this.landImpulse * 0.28,
       this.pos.z
     );
+    this.landImpulse = THREE.MathUtils.lerp(this.landImpulse, 0, Math.min(1, dt * 7));
     this.camera.rotation.set(this.pitch, this.yaw, Math.sin(this.bobPhase * 0.5) * this.bobAmt * 0.25);
   }
 
@@ -64,13 +66,19 @@ export class Player {
       this.bobPhase += dt * (inWater ? 5 : this.sprinting ? 11 : 7.5);
       this.bobAmt = THREE.MathUtils.lerp(this.bobAmt, 0.045, 0.08);
     } else {
-      this.bobAmt = THREE.MathUtils.lerp(this.bobAmt, 0, 0.08);
+      this.bobPhase += dt * 1.4;
+      this.bobAmt = THREE.MathUtils.lerp(this.bobAmt, 0.012, 0.05);
     }
 
+    const prevVelY = this.velY;
     const groundEff = Math.max(terrainH, inWater ? WATER_LEVEL - 1.35 : -Infinity);
     this.velY -= 32 * dt;
     this.pos.y += this.velY * dt;
     if (this.pos.y <= groundEff) {
+      if (!this.grounded && prevVelY < -12) {
+        this.landImpulse = Math.min(0.85, -prevVelY / 24);
+        this.bobPhase = 0;
+      }
       this.pos.y = groundEff;
       this.velY = 0;
       this.grounded = true;

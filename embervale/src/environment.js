@@ -170,6 +170,22 @@ void main() {
 }
 `;
 
+function makeGlowTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 4, 64, 64, 62);
+  grad.addColorStop(0, 'rgba(255,225,180,0.9)');
+  grad.addColorStop(0.25, 'rgba(255,180,110,0.5)');
+  grad.addColorStop(0.6, 'rgba(255,140,70,0.18)');
+  grad.addColorStop(1, 'rgba(255,120,60,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export class Environment {
   constructor(scene) {
     this.scene = scene;
@@ -177,6 +193,8 @@ export class Environment {
     this.timeFlow = false;
 
     scene.fog = new THREE.FogExp2(0xe9a870, 0.0024);
+    this.bgColor = new THREE.Color(0xe9a870);
+    scene.background = this.bgColor;
 
     this.sunDir = new THREE.Vector3(0, 1, 0);
     this.sun = new THREE.DirectionalLight(0xffd9a8, 2.2);
@@ -247,6 +265,19 @@ export class Environment {
       depthWrite: false,
       opacity: 0.45
     });
+    this.glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: makeGlowTexture(),
+      color: 0xffc46b,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      opacity: 0.75
+    }));
+    this.glowSprite.scale.set(1500, 1500, 1);
+    this.glowSprite.frustumCulled = false;
+    scene.add(this.glowSprite);
+
     this.cloudGroup = new THREE.Group();
     this.clouds = [];
     for (let i = 0; i < 14; i++) {
@@ -294,6 +325,8 @@ export class Environment {
     this.scene.fog.color.set(this._pal.fog);
     this.scene.fog.density = 0.0024 + (1 - dayF) * 0.0018;
 
+    this.bgColor.copy(this._pal.fog).multiplyScalar(sunY < -0.1 ? 0.55 : 0.96);
+
     this.skyUniforms.uZenith.value.copy(this._pal.zenith);
     this.skyUniforms.uHorizon.value.copy(this._pal.horizon);
     this.skyUniforms.uSunColor.value.copy(this._pal.sun);
@@ -301,6 +334,11 @@ export class Environment {
     this.skyUniforms.uNight.value = nightF;
     this.skyUniforms.uTime.value = t;
     this.skyMesh.position.copy(camera.position);
+
+    this.glowSprite.position.copy(camera.position).addScaledVector(this.sunDir, 2600);
+    this.glowSprite.material.color.copy(this._pal.sun);
+    this.glowSprite.material.opacity = 0.35 + dayF * 0.25;
+    this.glowSprite.visible = sunY > -0.25;
 
     this.waterUniforms.uTime.value = t;
     this.waterUniforms.uDeep.value.copy(this._pal.waterDeep);

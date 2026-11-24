@@ -239,6 +239,14 @@ body {
   color: var(--dim);
 }
 
+.intro-card .buildline {
+  margin: 18px 0 0;
+  font-size: 10.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 180, 107, 0.6);
+}
+
 .intro-card .small strong {
   color: var(--amber);
   font-weight: 600;
@@ -320,6 +328,7 @@ body.ui-hidden #crosshair {
       <h1 id="intro-title">EMBERVALE</h1>
       <p class="tag">golden hours, warm fields, quiet water.</p>
       <button id="btn-begin">begin</button>
+      <p class="buildline">build v4 · everything included · works offline</p>
       <p class="small">wander far — chunks you leave fade away after <strong>15 seconds</strong>,<br />
       and return <strong>exactly</strong> as you last saw them.</p>
     </div>
@@ -21670,6 +21679,8 @@ body.ui-hidden #crosshair {
       }
       if (colorize)
         colorize(mesh);
+      if (mesh.instanceColor)
+        mesh.instanceColor.needsUpdate = true;
       mesh.castShadow = shadow;
       mesh.receiveShadow = shadow;
       group.add(mesh);
@@ -22116,12 +22127,29 @@ void main() {
   #include <fog_fragment>
 }
 `;
+  function makeGlowTexture() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(64, 64, 4, 64, 64, 62);
+    grad.addColorStop(0, "rgba(255,225,180,0.9)");
+    grad.addColorStop(0.25, "rgba(255,180,110,0.5)");
+    grad.addColorStop(0.6, "rgba(255,140,70,0.18)");
+    grad.addColorStop(1, "rgba(255,120,60,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    const tex = new CanvasTexture(c);
+    tex.colorSpace = SRGBColorSpace;
+    return tex;
+  }
   var Environment = class {
     constructor(scene2) {
       this.scene = scene2;
       this.timeOfDay = GOLDEN_T;
       this.timeFlow = false;
       scene2.fog = new FogExp2(15313008, 24e-4);
+      this.bgColor = new Color(15313008);
+      scene2.background = this.bgColor;
       this.sunDir = new Vector3(0, 1, 0);
       this.sun = new DirectionalLight(16767400, 2.2);
       this.sun.castShadow = true;
@@ -22187,6 +22215,18 @@ void main() {
         depthWrite: false,
         opacity: 0.45
       });
+      this.glowSprite = new Sprite(new SpriteMaterial({
+        map: makeGlowTexture(),
+        color: 16761963,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        fog: false,
+        opacity: 0.75
+      }));
+      this.glowSprite.scale.set(1500, 1500, 1);
+      this.glowSprite.frustumCulled = false;
+      scene2.add(this.glowSprite);
       this.cloudGroup = new Group();
       this.clouds = [];
       for (let i = 0; i < 14; i++) {
@@ -22226,6 +22266,7 @@ void main() {
       this.hemi.intensity = 0.25 + dayF * 0.45;
       this.scene.fog.color.set(this._pal.fog);
       this.scene.fog.density = 24e-4 + (1 - dayF) * 18e-4;
+      this.bgColor.copy(this._pal.fog).multiplyScalar(sunY < -0.1 ? 0.55 : 0.96);
       this.skyUniforms.uZenith.value.copy(this._pal.zenith);
       this.skyUniforms.uHorizon.value.copy(this._pal.horizon);
       this.skyUniforms.uSunColor.value.copy(this._pal.sun);
@@ -22233,6 +22274,10 @@ void main() {
       this.skyUniforms.uNight.value = nightF;
       this.skyUniforms.uTime.value = t;
       this.skyMesh.position.copy(camera2.position);
+      this.glowSprite.position.copy(camera2.position).addScaledVector(this.sunDir, 2600);
+      this.glowSprite.material.color.copy(this._pal.sun);
+      this.glowSprite.material.opacity = 0.35 + dayF * 0.25;
+      this.glowSprite.visible = sunY > -0.25;
       this.waterUniforms.uTime.value = t;
       this.waterUniforms.uDeep.value.copy(this._pal.waterDeep);
       this.waterUniforms.uSky.value.copy(this._pal.horizon);
@@ -22270,6 +22315,7 @@ void main() {
       this.grounded = true;
       this.bobPhase = 0;
       this.bobAmt = 0;
+      this.landImpulse = 0;
       this.sprinting = false;
       camera2.rotation.order = "YXZ";
       camera2.position.copy(this.pos);
@@ -22299,9 +22345,10 @@ void main() {
       }
       this.camera.position.set(
         this.pos.x,
-        this.pos.y + EYE + Math.sin(this.bobPhase) * this.bobAmt,
+        this.pos.y + EYE + Math.sin(this.bobPhase) * this.bobAmt - this.landImpulse * 0.28,
         this.pos.z
       );
+      this.landImpulse = MathUtils.lerp(this.landImpulse, 0, Math.min(1, dt * 7));
       this.camera.rotation.set(this.pitch, this.yaw, Math.sin(this.bobPhase * 0.5) * this.bobAmt * 0.25);
     }
     updateWalk(dt, mx, mz, moving) {
@@ -22316,12 +22363,18 @@ void main() {
         this.bobPhase += dt * (inWater ? 5 : this.sprinting ? 11 : 7.5);
         this.bobAmt = MathUtils.lerp(this.bobAmt, 0.045, 0.08);
       } else {
-        this.bobAmt = MathUtils.lerp(this.bobAmt, 0, 0.08);
+        this.bobPhase += dt * 1.4;
+        this.bobAmt = MathUtils.lerp(this.bobAmt, 0.012, 0.05);
       }
+      const prevVelY = this.velY;
       const groundEff = Math.max(terrainH, inWater ? WATER_LEVEL - 1.35 : -Infinity);
       this.velY -= 32 * dt;
       this.pos.y += this.velY * dt;
       if (this.pos.y <= groundEff) {
+        if (!this.grounded && prevVelY < -12) {
+          this.landImpulse = Math.min(0.85, -prevVelY / 24);
+          this.bobPhase = 0;
+        }
         this.pos.y = groundEff;
         this.velY = 0;
         this.grounded = true;
@@ -22543,6 +22596,7 @@ void main() {
   renderer.domElement.id = "game";
   $("app").appendChild(renderer.domElement);
   var scene = new Scene();
+  scene.background = new Color(15313008);
   var camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.25, 7e3);
   var env = new Environment(scene);
   var world = new ChunkManager(scene, seed, env);
@@ -22710,9 +22764,9 @@ void main() {
   }
   window.addEventListener("beforeunload", saveGame);
   setInterval(saveGame, 8e3);
-  $("seed-label").textContent = `world ${seed.toString(16)}`;
-  for (let dz = -2; dz <= 2; dz++) {
-    for (let dx = -2; dx <= 2; dx++) {
+  $("seed-label").textContent = `world ${seed.toString(16)} \xB7 build v4`;
+  for (let dz = -3; dz <= 3; dz++) {
+    for (let dx = -3; dx <= 3; dx++) {
       world.buildChunk(Math.floor(player.pos.x / 96 + 0.5) + dx, Math.floor(player.pos.z / 96 + 0.5) + dz);
     }
   }
@@ -22745,6 +22799,25 @@ void main() {
         camera.updateProjectionMatrix();
       }
       renderer.render(scene, camera);
+      if (frames === 2) {
+        try {
+          const glc = renderer.getContext();
+          const px = new Uint8Array(4);
+          glc.readPixels(
+            glc.drawingBufferWidth / 2 | 0,
+            glc.drawingBufferHeight / 2 | 0,
+            1,
+            1,
+            glc.RGBA,
+            glc.UNSIGNED_BYTE,
+            px
+          );
+          if (px[0] < 8 && px[1] < 8 && px[2] < 8) {
+            fail("Embervale is running but the renderer produced a black frame.\nThis usually means your GPU/driver rejected the shaders.\nTry updating graphics drivers, or another browser (Chrome/Edge/Firefox).");
+          }
+        } catch {
+        }
+      }
       hudTimer += dt;
       if (hudTimer > 0.3) {
         const fps = fpsWindow > 0 ? Math.round(frames / fpsWindow) : 0;

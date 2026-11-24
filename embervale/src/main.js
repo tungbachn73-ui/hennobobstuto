@@ -53,6 +53,7 @@ renderer.domElement.id = 'game';
 $('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe9a870);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.25, 7000);
 
 const env = new Environment(scene);
@@ -228,10 +229,10 @@ function saveGame() {
 window.addEventListener('beforeunload', saveGame);
 setInterval(saveGame, 8000);
 
-$('seed-label').textContent = `world ${seed.toString(16)}`;
+$('seed-label').textContent = `world ${seed.toString(16)} · build v4`;
 
-for (let dz = -2; dz <= 2; dz++) {
-  for (let dx = -2; dx <= 2; dx++) {
+for (let dz = -3; dz <= 3; dz++) {
+  for (let dx = -3; dx <= 3; dx++) {
     world.buildChunk(Math.floor(player.pos.x / 96 + 0.5) + dx, Math.floor(player.pos.z / 96 + 0.5) + dz);
   }
 }
@@ -272,6 +273,22 @@ function loop() {
     }
 
     renderer.render(scene, camera);
+
+    if (frames === 2) {
+      try {
+        const glc = renderer.getContext();
+        const px = new Uint8Array(4);
+        glc.readPixels(
+          (glc.drawingBufferWidth / 2) | 0,
+          (glc.drawingBufferHeight / 2) | 0,
+          1, 1, glc.RGBA, glc.UNSIGNED_BYTE, px
+        );
+        if (px[0] < 8 && px[1] < 8 && px[2] < 8) {
+          fail('Embervale is running but the renderer produced a black frame.\nThis usually means your GPU/driver rejected the shaders.\nTry updating graphics drivers, or another browser (Chrome/Edge/Firefox).');
+        }
+      } catch {
+      }
+    }
 
     hudTimer += dt;
     if (hudTimer > 0.3) {

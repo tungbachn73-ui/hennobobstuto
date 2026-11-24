@@ -350,6 +350,7 @@ export class ChunkManager {
       mesh.setMatrixAt(i, matrixOf(items[i]));
     }
     if (colorize) colorize(mesh);
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.castShadow = shadow;
     mesh.receiveShadow = shadow;
     group.add(mesh);
