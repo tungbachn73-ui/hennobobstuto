@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Embervale — an endless, warm, remembered world</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="vignette"></div>
+  <div id="water-tint"></div>
+  <div id="crosshair"></div>
+
+  <div id="hud">
+    <div class="stat"><span id="stat-fps">–</span> fps</div>
+    <div class="stat" id="stat-pos">0, 0, 0</div>
+    <div class="stat" id="stat-chunks">0 active · 0 cached · 0 faded · 0 remembered</div>
+    <div class="stat dim" id="seed-label"></div>
+  </div>
+
+  <div id="hints">wasd move · shift sprint · space jump · e campfire · f flight · t time · m sound · h hide ui · [ ] draw distance</div>
+  <div id="toast"></div>
+
+  <div id="pause" class="hidden"><div class="pause-card"><h2>resting</h2><p>click to return to the vale</p></div></div>
+
+  <div id="intro">
+    <div class="intro-card">
+      <p class="over">an endless world remembers you</p>
+      <h1 id="intro-title">EMBERVALE</h1>
+      <p class="tag">golden hours, warm fields, quiet water.</p>
+      <button id="btn-begin">begin</button>
+      <p class="small">wander far — chunks you leave fade away after <strong>15 seconds</strong>,<br />
+      and return <strong>exactly</strong> as you last saw them.</p>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

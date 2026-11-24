@@ -1,0 +1,12 @@
+{
+  "name": "embervale",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Embervale — an endless, warm, remembered open world in the browser",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "tune": "node scripts/tune.mjs",
+    "build:single": "node scripts/build-single.mjs"
+  }
+}
