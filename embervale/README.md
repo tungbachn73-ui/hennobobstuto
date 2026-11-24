@@ -6,19 +6,19 @@ never repeats on you when you return.
 
 ## Run
 
-The simplest way: **double-click `index.html` (or `embervale.html`)** — both are
-self-contained single-file builds of the whole game and work offline from disk
-(Three.js loads from a CDN, so the first launch needs internet).
+**Double-click `index.html`.** It is a single, fully self-contained file — the
+Three.js engine, shaders, and all game code are inlined inside it (~950 kb). No
+internet, no server, no install needed; it works straight from disk.
 
-To serve instead:
+For development:
 
 ```bash
-python3 -m http.server 8000
-# open http://localhost:8000
-```
+npm install
+npm start          # serves the folder, open http://localhost:8000/dev.html
 
-`dev.html` + `npm start` runs the modular source version (for editing `src/` and
-rebuilding with `npm run build:single`).
+npm test           # runs smoke, boot, and bundled-boot tests in node
+npm run build      # regenerates index.html from src/ (uses inlined engine)
+```
 
 ## Controls
 
@@ -55,8 +55,7 @@ rebuilding with `npm run build:single`).
 ## Architecture
 
 ```
-index.html       self-contained single-file build (double-click to play)
-embervale.html   same build, alternate name
+index.html       all-in-one single file: engine + game inlined (double-click to play)
 dev.html         modular source version for development (serve the folder)
 src/
   rng.js          seeded PRNG, hash, seeded 2D simplex noise
@@ -65,15 +64,16 @@ src/
   environment.js  sky shader, sun-time palette, water shader, clouds, lighting, fog
   player.js       first-person controller (walk, wade, sprint, jump, flight)
   audio.js        procedural wind / pad / birdsong ambience (Web Audio, no assets)
-  main.js         bootstrap, render loop, post-processing, HUD, save/load
-scripts/          build-single.mjs (rebuild the single-file pages),
-                  tune.mjs (terrain stats), smoke.mjs / boot-smoke.mjs (node tests)
+  main.js         bootstrap, render loop, HUD, save/load (no post-processing dependency)
+scripts/          build-single.mjs (esbuild all-in-one), bundle-smoke.mjs (runs the
+                  built file headlessly), smoke.mjs / boot-smoke.mjs, tune.mjs
 ```
 
 ## Troubleshooting
 
-- If anything goes wrong at startup, a red banner appears with the reason
-  (no internet for the Three.js CDN, unsupported WebGL, etc.).
+- If anything goes wrong at startup or while rendering, a red banner appears with
+  the exact reason (unsupported or unavailable WebGL, broken GPU driver, etc.).
+- Rendering failures stop the loop instead of leaving a black screen.
 - If pointer lock is unavailable (sandboxed previews), the game falls back to
   hold-and-drag looking instead of mouselook.
 

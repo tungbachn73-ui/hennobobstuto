@@ -6,7 +6,12 @@
   "description": "Embervale — an endless, warm, remembered open world in the browser",
   "scripts": {
     "start": "python3 -m http.server 8000",
-    "tune": "node scripts/tune.mjs",
-    "build:single": "node scripts/build-single.mjs"
+    "build": "node scripts/build-single.mjs",
+    "test": "node scripts/smoke.mjs && node scripts/boot-smoke.mjs && node scripts/bundle-smoke.mjs",
+    "tune": "node scripts/tune.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "three": "0.160.0"
   }
 }

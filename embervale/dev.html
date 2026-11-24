@@ -13,6 +13,24 @@
     }
   }
   </script>
+  <script>
+  (function () {
+    function fail(msg) {
+      var el = document.getElementById('boot-error');
+      if (!el) return;
+      el.style.display = 'flex';
+      el.textContent = msg;
+    }
+    window.__embervaleFail = fail;
+    window.addEventListener('error', function (e) {
+      var m = e && e.message ? e.message : 'script could not load';
+      fail('Embervale failed to start:\n' + m + '\n\nIf you opened this from a ZIP: open index.html (fully self-contained)\nby double-clicking instead of dev.html, or serve the folder with a local server.\nThis page needs internet access to load Three.js from a CDN.');
+    }, true);
+    if (typeof WebGLRenderingContext === 'undefined') {
+      fail('Your browser does not support WebGL, which Embervale needs to render its world.');
+    }
+  })();
+  </script>
 </head>
 <body>
   <div id="app"></div>

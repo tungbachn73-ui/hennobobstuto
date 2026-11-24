@@ -1,8 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ChunkManager, windUniform } from './world.js';
 import { Environment } from './environment.js';
 import { Player, findSpawn } from './player.js';
@@ -30,18 +26,27 @@ try {
 
 const seed = saved?.seed ?? ((Math.random() * 0xffffffff) >>> 0);
 
-let renderer;
+const fail = window.__embervaleFail || ((msg) => console.error('[Embervale]', msg));
+
+let renderer = null;
 try {
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-} catch (e) {
-  document.body.innerHTML = '<div style="color:#f0d9b8;font-family:serif;padding:3rem">WebGL is not available in this browser.</div>';
-  throw e;
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch {
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: false });
+  } catch (e2) {
+    fail('WebGL is not available in this browser, so the world cannot be drawn.\n' + (e2 && e2.message ? e2.message : ''));
+    throw e2;
+  }
 }
+renderer.debug.onShaderError = () => {
+  fail('A rendering shader failed to compile.\nYour world cannot be drawn — please update your GPU/driver or try another browser.');
+};
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.domElement.id = 'game';
@@ -90,17 +95,10 @@ for (let i = 0; i < 4; i++) {
   lightPool.lights.push(l);
 }
 
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.32, 0.7, 0.88);
-composer.addPass(bloom);
-composer.addPass(new OutputPass());
-
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 const locked = () => document.pointerLockElement === renderer.domElement;
@@ -243,44 +241,53 @@ let elapsed = 0;
 let frames = 0;
 let fpsWindow = 0;
 let hudTimer = 0;
+let broken = false;
 
 function loop() {
+  if (broken) return;
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 0.05);
-  elapsed += dt;
-  frames++;
-  fpsWindow += dt;
 
-  player.update(dt);
-  windUniform.value = elapsed;
-  env.update(dt, elapsed, player.pos, camera);
-  world.update(camera, player.pos);
+  try {
+    elapsed += dt;
+    frames++;
+    fpsWindow += dt;
 
-  lightPool.center.copy(player.pos);
-  world.updateEffects(elapsed, lightPool);
+    player.update(dt);
+    windUniform.value = elapsed;
+    env.update(dt, elapsed, player.pos, camera);
+    world.update(camera, player.pos);
 
-  const underwater = world.sampler.height(camera.position.x, camera.position.z) < WATER_LEVEL - 0.3
-    && camera.position.y < WATER_LEVEL + 0.2;
-  $('water-tint').style.opacity = underwater ? 1 : 0;
+    lightPool.center.copy(player.pos);
+    world.updateEffects(elapsed, lightPool);
 
-  const targetFov = player.sprinting ? 76 : player.fly ? 74 : 70;
-  if (Math.abs(camera.fov - targetFov) > 0.05) {
-    camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 0.06);
-    camera.updateProjectionMatrix();
-  }
+    const underwater = world.sampler.height(camera.position.x, camera.position.z) < WATER_LEVEL - 0.3
+      && camera.position.y < WATER_LEVEL + 0.2;
+    $('water-tint').style.opacity = underwater ? 1 : 0;
 
-  composer.render();
+    const targetFov = player.sprinting ? 76 : player.fly ? 74 : 70;
+    if (Math.abs(camera.fov - targetFov) > 0.05) {
+      camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 0.06);
+      camera.updateProjectionMatrix();
+    }
 
-  hudTimer += dt;
-  if (hudTimer > 0.3) {
-    const fps = fpsWindow > 0 ? Math.round(frames / fpsWindow) : 0;
-    $('stat-fps').textContent = fps;
-    $('stat-pos').textContent = `${player.pos.x.toFixed(0)}, ${player.pos.y.toFixed(0)}, ${player.pos.z.toFixed(0)}`;
-    $('stat-chunks').textContent =
-      `${world.activeCount} active · ${world.cachedCount} cached · ${world.deletedCount} faded · ${world.restoredCount} remembered`;
-    hudTimer = 0;
-    frames = 0;
-    fpsWindow = 0;
+    renderer.render(scene, camera);
+
+    hudTimer += dt;
+    if (hudTimer > 0.3) {
+      const fps = fpsWindow > 0 ? Math.round(frames / fpsWindow) : 0;
+      $('stat-fps').textContent = fps;
+      $('stat-pos').textContent = `${player.pos.x.toFixed(0)}, ${player.pos.y.toFixed(0)}, ${player.pos.z.toFixed(0)}`;
+      $('stat-chunks').textContent =
+        `${world.activeCount} active · ${world.cachedCount} cached · ${world.deletedCount} faded · ${world.restoredCount} remembered`;
+      hudTimer = 0;
+      frames = 0;
+      fpsWindow = 0;
+    }
+  } catch (err) {
+    broken = true;
+    fail('Embervale hit an error while rendering:\n' + (err && err.stack ? err.stack : String(err)));
+    throw err;
   }
 }
 

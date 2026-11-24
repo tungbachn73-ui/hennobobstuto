@@ -1,22 +1,30 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const html = readFileSync(new URL('../dist/embervale.html', import.meta.url), 'utf8');
-const m = html.match(/<script type="module">\n([\s\S]*)<\/script>\s*<\/body>/);
-if (!m) throw new Error('module script not found in build');
-let js = m[1];
+const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-const threeCount = (js.match(/^import \* as THREE from 'three';/gm) || []).length;
-if (threeCount !== 1) {
-  throw new Error(`THREE import must appear exactly once, found ${threeCount} (0 = "THREE is not defined", >1 = duplicate declaration)`);
-}
-if (!/from 'three\/addons\/postprocessing\//.test(js)) {
-  throw new Error('addon imports missing from bundle (would cause: EffectComposer is not defined)');
-}
+const markers = html.includes('__GAME_BUNDLE__') && html.includes('__BUNDLE_END__');
+if (!markers) throw new Error('bundle markers missing — not the all-in-one build');
 
-for (const name of ['clamp01', 'smoothstep01', 'createSampler', 'colorAt', 'WATER_LEVEL', 'windUniform']) {
-  const defines = new RegExp(`(const|let|var|function) ${name}\\b`);
-  if (!defines.test(js)) throw new Error(`symbol ${name} used but never defined after import stripping`);
+const startIdx = html.indexOf('<script>', html.indexOf('__GAME_BUNDLE__'));
+const endIdx = html.indexOf('</script>', startIdx);
+let js = html.slice(startIdx + '<script>\n'.length, endIdx);
+
+if (/^import\s/m.test(js)) throw new Error('bundle has import statements — would fail offline');
+if (!/render\(scene, camera\)/.test(js)) throw new Error('bundle missing render call');
+if (js.length < 200000) throw new Error(`bundle suspiciously small (${js.length} bytes) — Three.js was not inlined`);
+
+js = js.replace(/new ((?:[A-Za-z$_][\w$]*\.)*)WebGLRenderer\(\{[^{}]*\}\)/g, 'new __StubRenderer()');
+if (/WebGLRenderer\(/.test(js)) throw new Error('harness patch failed: WebGLRenderer not stubbed');
+js = `function __StubRenderer() {
+  this.domElement = globalThis.__gameCanvas;
+  this.setPixelRatio = () => {};
+  this.setSize = () => {};
+  this.render = () => {};
+  this.dispose = () => {};
+  this.shadowMap = { enabled: false, type: null };
+  this.debug = {};
 }
+${js}`;
 
 class DomElement {
   constructor(id, classes = []) {
@@ -56,6 +64,7 @@ const getEl = (id) => {
 
 const gameCanvas = new DomElement('game');
 gameCanvas.requestPointerLock = () => Promise.reject(new Error('pointer lock unavailable in test'));
+globalThis.__gameCanvas = gameCanvas;
 
 globalThis.document = {
   pointerLockElement: undefined,
@@ -70,13 +79,12 @@ globalThis.document = {
   }),
   addEventListener: () => {}
 };
+globalThis.document.body = new DomElement('body');
 
 globalThis.window = {
   innerWidth: 1280,
   innerHeight: 720,
   devicePixelRatio: 1,
-  AudioContext: undefined,
-  webkitAudioContext: undefined,
   addEventListener: () => {}
 };
 
@@ -93,24 +101,11 @@ globalThis.setInterval = () => 0;
 globalThis.setTimeout = () => 0;
 globalThis.clearTimeout = () => {};
 
-js = js
-  .replace(
-    'new THREE.WebGLRenderer({ antialias: true, powerPreference: \'high-performance\' })',
-    `{ domElement: globalThis.__gameCanvas, setPixelRatio() {}, setSize() {}, shadowMap: { enabled: false, type: null }, dispose() {} }`
-  )
-  .replace(
-    'new EffectComposer(renderer)',
-    `{ addPass() {}, setSize() {}, render() {} }`
-  );
-
-globalThis.__gameCanvas = gameCanvas;
-if (js.includes('new THREE.WebGLRenderer(')) throw new Error('harness patch failed: WebGLRenderer not stubbed');
-if (!js.includes('domElement: globalThis.__gameCanvas')) throw new Error('harness patch failed: stub text missing');
-globalThis.document.body = new DomElement('body');
-
-js += '\nglobalThis.__BOOT = { player, world, env, camera, scene, saveGame };\n';
+const bootHook = '\nglobalThis.__BOOT = { player, world, env, camera, scene };\n';
+const tail = js.lastIndexOf('})();');
+if (tail === -1) throw new Error('IIFE tail not found');
+js = js.slice(0, tail) + bootHook + js.slice(tail);
 writeFileSync(new URL('../.tmp-bundle.mjs', import.meta.url), js);
-
 await import('../.tmp-bundle.mjs');
 
 const B = globalThis.__BOOT;
@@ -118,13 +113,11 @@ if (!B) throw new Error('boot did not run to completion');
 if (!Number.isFinite(B.player.pos.x)) throw new Error('player position is NaN');
 if (B.world.activeCount < 25) throw new Error(`expected at least 25 prebuilt chunks, got ${B.world.activeCount}`);
 
-const beginHandlers = getEl('btn-begin').handlers.click || [];
-beginHandlers.forEach((fn) => fn());
+(getEl('btn-begin').handlers.click || []).forEach((fn) => fn());
 if (!getEl('intro').classList.contains('fade')) throw new Error('begin button did not fade the intro');
-if (!getEl('water-tint')) throw new Error('missing hud elements');
 
 console.log('prebuilt chunks:', B.world.activeCount);
 console.log('player position:', B.player.pos.x.toFixed(1), B.player.pos.y.toFixed(1), B.player.pos.z.toFixed(1));
 console.log('begin click wired: yes (intro faded)');
-console.log('BUNDLED BOOT OK');
+console.log('BUNDLED BOOT OK (offline all-in-one)');
 realSetInterval(() => process.exit(0), 50);
