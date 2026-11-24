@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- single-file build, source: src/ -->
+  <!-- single-file build of dev.html via scripts/build-single.mjs -->
 <title>Embervale — an endless, warm, remembered world</title>
   <style>
 :root {
@@ -251,6 +251,23 @@ body.ui-hidden #crosshair {
   display: none;
 }
 
+#boot-error {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  white-space: pre-line;
+  background: rgba(9, 5, 3, 0.95);
+  color: #ffb2a0;
+  font-size: 14.5px;
+  letter-spacing: 0.05em;
+  line-height: 1.8;
+}
+
 </style>
   <script type="importmap">
   {
@@ -260,6 +277,23 @@ body.ui-hidden #crosshair {
     }
   }
   </script>
+<script>
+(function () {
+  function fail(msg) {
+    var el = document.getElementById('boot-error');
+    if (!el) return;
+    el.style.display = 'flex';
+    el.textContent = msg;
+  }
+  window.addEventListener('error', function (e) {
+    var m = e && e.message ? e.message : 'script could not load';
+    fail('Embervale failed to start:\n' + m + '\n\nIf you opened this from a ZIP: open embervale.html or index.html (both self-contained)\nby double-clicking, or serve the folder with a local server.\nThe multi-file page (dev.html) needs internet access to load Three.js.');
+  }, true);
+  if (typeof WebGLRenderingContext === 'undefined') {
+    fail('Your browser does not support WebGL, which Embervale needs to render its world.');
+  }
+})();
+</script>
 </head>
 <body>
   <div id="app"></div>
@@ -290,6 +324,8 @@ body.ui-hidden #crosshair {
       and return <strong>exactly</strong> as you last saw them.</p>
     </div>
   </div>
+
+  <div id="boot-error"></div>
 
   <script type="module">
 
@@ -1764,18 +1800,48 @@ window.addEventListener('resize', () => {
 });
 
 const locked = () => document.pointerLockElement === renderer.domElement;
+let everLocked = false;
+let dragLook = false;
 
-renderer.domElement.addEventListener('click', () => {
-  if (!locked() && $('intro').classList.contains('gone')) renderer.domElement.requestPointerLock();
-});
+function requestLookControl() {
+  try {
+    const p = renderer.domElement.requestPointerLock();
+    if (p && typeof p.catch === 'function') p.catch(fallbackLook);
+  } catch {
+    fallbackLook();
+  }
+}
+
+function fallbackLook() {
+  if (everLocked) return;
+  everLocked = true;
+  toast('pointer lock unavailable — hold and drag to look around');
+}
+
+document.addEventListener('pointerlockerror', fallbackLook);
 
 document.addEventListener('pointerlockchange', () => {
-  $('pause').classList.toggle('hidden', locked());
-  if (!locked()) player.keys.clear();
+  if (locked()) everLocked = true;
+  if (everLocked) {
+    $('pause').classList.toggle('hidden', locked());
+    if (!locked()) player.keys.clear();
+  }
+});
+
+renderer.domElement.addEventListener('click', () => {
+  if (!locked() && $('intro').classList.contains('gone')) requestLookControl();
+});
+
+document.addEventListener('pointerdown', (e) => {
+  if (e.target === renderer.domElement && !locked()) dragLook = true;
+});
+
+document.addEventListener('pointerup', () => {
+  dragLook = false;
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!locked()) return;
+  if (!locked() && !dragLook) return;
   player.yaw -= e.movementX * 0.0021;
   player.pitch -= e.movementY * 0.0021;
   player.pitch = THREE.MathUtils.clamp(player.pitch, -1.5, 1.5);
@@ -1835,7 +1901,7 @@ $('btn-begin').addEventListener('click', () => {
   intro.classList.add('fade');
   setTimeout(() => intro.classList.add('gone'), 900);
   ambience.init();
-  renderer.domElement.requestPointerLock();
+  requestLookControl();
 });
 
 function saveGame() {

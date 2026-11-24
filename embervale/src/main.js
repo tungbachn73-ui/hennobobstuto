@@ -104,18 +104,48 @@ window.addEventListener('resize', () => {
 });
 
 const locked = () => document.pointerLockElement === renderer.domElement;
+let everLocked = false;
+let dragLook = false;
 
-renderer.domElement.addEventListener('click', () => {
-  if (!locked() && $('intro').classList.contains('gone')) renderer.domElement.requestPointerLock();
-});
+function requestLookControl() {
+  try {
+    const p = renderer.domElement.requestPointerLock();
+    if (p && typeof p.catch === 'function') p.catch(fallbackLook);
+  } catch {
+    fallbackLook();
+  }
+}
+
+function fallbackLook() {
+  if (everLocked) return;
+  everLocked = true;
+  toast('pointer lock unavailable — hold and drag to look around');
+}
+
+document.addEventListener('pointerlockerror', fallbackLook);
 
 document.addEventListener('pointerlockchange', () => {
-  $('pause').classList.toggle('hidden', locked());
-  if (!locked()) player.keys.clear();
+  if (locked()) everLocked = true;
+  if (everLocked) {
+    $('pause').classList.toggle('hidden', locked());
+    if (!locked()) player.keys.clear();
+  }
+});
+
+renderer.domElement.addEventListener('click', () => {
+  if (!locked() && $('intro').classList.contains('gone')) requestLookControl();
+});
+
+document.addEventListener('pointerdown', (e) => {
+  if (e.target === renderer.domElement && !locked()) dragLook = true;
+});
+
+document.addEventListener('pointerup', () => {
+  dragLook = false;
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!locked()) return;
+  if (!locked() && !dragLook) return;
   player.yaw -= e.movementX * 0.0021;
   player.pitch -= e.movementY * 0.0021;
   player.pitch = THREE.MathUtils.clamp(player.pitch, -1.5, 1.5);
@@ -175,7 +205,7 @@ $('btn-begin').addEventListener('click', () => {
   intro.classList.add('fade');
   setTimeout(() => intro.classList.add('gone'), 900);
   ambience.init();
-  renderer.domElement.requestPointerLock();
+  requestLookControl();
 });
 
 function saveGame() {

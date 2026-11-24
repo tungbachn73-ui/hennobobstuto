@@ -6,13 +6,19 @@ never repeats on you when you return.
 
 ## Run
 
+The simplest way: **double-click `index.html` (or `embervale.html`)** — both are
+self-contained single-file builds of the whole game and work offline from disk
+(Three.js loads from a CDN, so the first launch needs internet).
+
+To serve instead:
+
 ```bash
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-Any static file server works (there is no build step). Three.js is loaded from a CDN,
-so the first launch needs internet access.
+`dev.html` + `npm start` runs the modular source version (for editing `src/` and
+rebuilding with `npm run build:single`).
 
 ## Controls
 
@@ -49,6 +55,9 @@ so the first launch needs internet access.
 ## Architecture
 
 ```
+index.html       self-contained single-file build (double-click to play)
+embervale.html   same build, alternate name
+dev.html         modular source version for development (serve the folder)
 src/
   rng.js          seeded PRNG, hash, seeded 2D simplex noise
   gen.js          terrain height + moisture + biome color (pure math, node-testable)
@@ -57,8 +66,16 @@ src/
   player.js       first-person controller (walk, wade, sprint, jump, flight)
   audio.js        procedural wind / pad / birdsong ambience (Web Audio, no assets)
   main.js         bootstrap, render loop, post-processing, HUD, save/load
-scripts/tune.mjs  offline stats for the terrain generator (node scripts/tune.mjs)
+scripts/          build-single.mjs (rebuild the single-file pages),
+                  tune.mjs (terrain stats), smoke.mjs / boot-smoke.mjs (node tests)
 ```
+
+## Troubleshooting
+
+- If anything goes wrong at startup, a red banner appears with the reason
+  (no internet for the Three.js CDN, unsupported WebGL, etc.).
+- If pointer lock is unavailable (sandboxed previews), the game falls back to
+  hold-and-drag looking instead of mouselook.
 
 All procedural generation is pure math driven by the world seed — no assets, no server,
 no downloads. Landscapes vary: warm valleys, forested hills, rocky ridges with snow caps,
